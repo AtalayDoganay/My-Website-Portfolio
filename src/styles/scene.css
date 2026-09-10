@@ -1,0 +1,61 @@
+/* The scene fills its band and dissolves into the page at the bottom, so the
+   meadow becomes the paper rather than stopping at a hard edge.
+
+   Motion here is weather: three cloud bands drifting at different speeds, and
+   the doorway glow breathing. Nothing moves in response to scrolling, and all of
+   it stops under prefers-reduced-motion - the static frame is the composition. */
+
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.scene__art {
+  width: 100%;
+  height: 100%;
+}
+
+/* Mist at the foot of the band: the field settling into the page. */
+.scene__settle {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  height: 9%;
+  background: linear-gradient(to bottom, rgb(242 240 230 / 0), var(--paper));
+}
+
+.scene--horizon .scene__settle { height: 16%; }
+
+.scene__clouds {
+  animation: drift var(--drift-mid) linear infinite;
+  will-change: transform;
+}
+.scene__clouds--near { animation-duration: var(--drift-near); }
+.scene__clouds--far  { animation-duration: var(--drift-far); }
+
+/* The tile is 1600 units wide and drawn twice, so a full -1600 translation
+   returns to an identical frame and the loop is invisible. */
+@keyframes drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-1600px); }
+}
+
+.scene__bloom {
+  opacity: 0.72;
+  animation: breathe var(--breathe) ease-in-out infinite alternate;
+  transform-origin: 800px 408px;
+}
+
+@keyframes breathe {
+  from { opacity: 0.58; transform: scale(0.97); }
+  to   { opacity: 0.86; transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene__clouds,
+  .scene__bloom {
+    animation: none;
+  }
+  .scene__bloom { opacity: 0.72; }
+}

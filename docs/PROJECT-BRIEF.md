@@ -1,9 +1,10 @@
 # atalaydoganay.com — project brief
 
-**Status: setup only.** Nothing is designed, implemented, hosted, or deployed. This brief
-exists so a later session can start work without re-deriving the goals.
+**Status: a first working local version exists.** Four pages build and run on a local
+preview server. Nothing is hosted or deployed, the domain is not registered or connected,
+and no content here has been published.
 
-Written 2026-09-09.
+Written 2026-09-09. Updated the same day, when the first version was built.
 
 ## Purpose
 
@@ -67,12 +68,18 @@ placeholder. An invented feature list is worse than a short honest one.
 3. **About / education** — Cal Poly Pomona, Orange Coast College, interests.
 4. **Contact / resume** — only the public versions Atalay provides.
 
-## Design direction
+## Design direction — chosen 2026-09-09
 
-Deliberately open. **Do not commit to a visual theme before discussing preferences with
-Atalay** — that conversation is the first step of the next phase.
+Atalay chose **dreamcore**: a quiet, nostalgic, slightly surreal place, built around a
+single atmospheric scene — a lit doorway standing alone in a meadow under drifting cloud.
+Faded sky blue, misty lavender, muted meadow green, soft ivory. See `docs/DESIGN-NOTES.md`
+for the palette, type, motion and the reasoning behind each.
 
-What is already agreed:
+The structural reference was the contact page at `phillipche.com`: narrow centred column,
+compact horizontal navigation, thin-bordered cards, generous negative space. Structure only
+— no branding, colour, type, imagery or copy was taken from it.
+
+What was already agreed, and still holds:
 
 - Intentional typography. A real type scale, chosen deliberately, not framework defaults.
 - Polished mobile layout, treated as a first-class case rather than a fallback.
@@ -108,8 +115,24 @@ For a contact route, prefer a `mailto:` link or a linked profile over a form tha
 backend. If a form is later wanted, that decision reopens server-side validation, spam
 handling, rate limiting, and data storage — treat it as a real feature with a real review.
 
-Stack is not chosen. Decide it with Atalay at the start of the implementation phase, and
-record the decision here.
+### Stack — chosen 2026-09-09
+
+**A static site with a small zero-dependency build step.** `package.json` has no
+dependencies of any kind, production or development.
+
+- Pages are small ES modules under `src/pages/` that return HTML strings; `src/data/site.js`
+  holds all the content in one place; `build.mjs` (about 90 lines) renders them to `dist/`,
+  concatenates the stylesheets and copies assets. `serve.mjs` is a preview server.
+- Why not a framework: the site is four static pages with no interactivity. A generator
+  would add a few hundred transitive packages to produce the same output, and every one of
+  those is supply-chain surface on a repository whose stated policy is to add a dependency
+  only when the work needs it.
+- Why not four hand-written HTML files: navigation, layout, and project presentation are
+  shared, and duplicating them across four files is how they drift apart.
+- **The site ships no JavaScript.** Nothing on it needs any.
+
+Provisional in the sense that Atalay has not reviewed it yet; it is easy to move off, since
+the output is plain HTML and CSS.
 
 ## Unresolved: hosting, domain, DNS, deployment
 
@@ -119,6 +142,9 @@ created, nothing was purchased, and nothing was deployed during setup.
 
 ## Next action
 
-Discuss visual direction and the project list with Atalay. Specifically: which two or three
-projects appear, what each one is allowed to claim, and the design preferences that are
-currently open. Then choose a stack and record it here.
+Atalay reviews the local preview. The open items are listed under "Missing material" in
+`docs/CONTENT-SOURCES.md` — screenshots for both projects, whether a contact email or any
+other account should appear, release status, and sign-off on the project write-ups.
+
+Hosting remains unresolved; see `docs/HOSTING-DECISIONS.md`. Nothing should be deployed
+until Atalay asks for it.

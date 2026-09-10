@@ -18,3 +18,12 @@ secrets.json
 # Local
 node_modules/
 tmp/
+
+# Build output
+dist/
+
+# Local Python venv for the webapp-testing skill
+.venv/
+
+# Dev-only test vendor (fetched on demand, see README)
+tools/vendor/

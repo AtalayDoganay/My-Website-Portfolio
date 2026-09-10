@@ -1,0 +1,10 @@
+# Normalise text to LF in the repository; check out with the platform's endings.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending converted.
+*.woff2 binary
+*.woff  binary
+*.png   binary
+*.jpg   binary
+*.webp  binary
+*.ico   binary

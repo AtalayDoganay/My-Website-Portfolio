@@ -1,0 +1,131 @@
+/* One narrow column, left aligned, held to the same width from the masthead to
+   the footer. The sky band above it is the only full-bleed element on the page. */
+
+.column {
+  width: 100%;
+  max-width: var(--column);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+main.column {
+  flex: 1;
+  padding-block: var(--space-7) var(--space-8);
+}
+
+/* --- The sky band ------------------------------------------------------- */
+
+.band {
+  position: relative;
+  flex: none;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--sky);
+}
+
+.band--field   { height: clamp(19rem, 46vh, 28rem); }
+.band--horizon { height: clamp(9.5rem, 22vh, 12.5rem); }
+
+/* --- Masthead ----------------------------------------------------------- */
+
+.masthead {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 2;
+  padding-block: var(--space-4);
+}
+
+.masthead__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+}
+
+.wordmark {
+  font-family: var(--face-display);
+  font-size: 1rem;
+  font-variation-settings: 'opsz' 12, 'wght' 520;
+  letter-spacing: 0.005em;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.wordmark:hover { color: var(--dusk); }
+
+.nav__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav__link {
+  display: inline-block;
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--radius-pill);
+  color: var(--ink-on-sky);
+  font-size: var(--step--1);
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: background-color var(--tap) var(--ease), color var(--tap) var(--ease);
+}
+.nav__link:hover { color: var(--ink); background: rgb(255 255 255 / 0.4); }
+
+.nav__link--current {
+  color: var(--ink);
+  background: rgb(255 255 255 / 0.62);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.7);
+}
+
+/* --- Footer ------------------------------------------------------------- */
+
+.site-foot {
+  flex: none;
+  border-top: 1px solid var(--rule);
+  padding-block: var(--space-4) var(--space-5);
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+}
+
+.site-foot__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-5);
+  justify-content: space-between;
+}
+
+.site-foot p { margin: 0; }
+
+/* Padded so the one link down here clears the 44px touch target. */
+.site-foot__aside a {
+  display: inline-block;
+  padding-block: var(--space-3);
+}
+
+/* --- Narrow screens ----------------------------------------------------- */
+
+/* Touch. Every target clears 44px on a finger-sized screen; the nav pills grow
+   rather than the text, so the compact look survives. */
+@media (pointer: coarse), (max-width: 34rem) {
+  .nav__link { padding: 0.66rem 0.8rem; }
+  .wordmark {
+    display: inline-block;
+    padding-block: 0.6rem;
+  }
+}
+
+@media (max-width: 34rem) {
+  :root { --gutter: 1.25rem; }
+
+  .masthead { padding-block: var(--space-2); }
+  .masthead__inner { gap: 0; }
+  .nav__list { margin-inline-start: -0.8rem; }  /* optically align the first pill */
+  .band--field { height: clamp(17rem, 40vh, 21rem); }
+}

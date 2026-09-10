@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="A lit doorway in a field">
+  <rect width="32" height="32" rx="6" fill="#C3D9E8"/>
+  <path d="M0 21h32v11H0z" fill="#9FB093"/>
+  <rect x="0" y="19" width="32" height="4" fill="#D9D3E6" opacity=".7"/>
+  <rect x="11" y="9" width="10" height="14" fill="#F6E7C0"/>
+  <path d="M9.5 7.5h13v2h-13zM9.5 9.5h2v13h-2zM20.5 9.5h2v13h-2z" fill="#EEE7D7"/>
+</svg>
