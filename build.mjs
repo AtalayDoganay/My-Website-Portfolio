@@ -45,31 +45,53 @@ async function copyDir(from, to) {
 }
 
 /**
- * The interactive screen is an HTML element laid over an aperture drawn in SVG.
- * Two files therefore hold the same four numbers, and a silent drift between them
- * would slide the hit area off the glass without anything failing. Check it.
+ * The screen overlay is positioned from numbers the renderer measured, not from
+ * numbers a human copied. tools/model_crt.py writes the rectangle the tube occupies
+ * in the rendered image; this turns it into custom properties the stylesheet uses.
+ *
+ * It also enforces the one assumption the overlay rests on: that the renderer's
+ * camera was level, so the screen projects as an axis-aligned rectangle. If a future
+ * camera change tilts it, the rectangle would no longer match the glass and the text
+ * would sit crooked on it - so the build stops instead.
  */
-async function checkScreenBox() {
-  const { SCREEN_BOX } = await import(
-    `${pathToFileURL(join(process.cwd(), SRC, 'components', 'room.js')).href}?v=${Date.now()}`
-  );
-  const css = await fs.readFile(join(SRC, 'styles', 'room.css'), 'utf8');
-  const expected = {
-    '--screen-left': SCREEN_BOX.left,
-    '--screen-top': SCREEN_BOX.top,
-    '--screen-width': SCREEN_BOX.width,
-    '--screen-height': SCREEN_BOX.height,
-  };
-  for (const [prop, value] of Object.entries(expected)) {
-    const found = css.match(new RegExp(`${prop}:\\s*([\\d.]+)%`));
-    if (!found) throw new Error(`room.css is missing ${prop}`);
-    if (Math.abs(Number(found[1]) - value) > 0.01) {
-      throw new Error(
-        `Screen aperture drift: room.css has ${prop}: ${found[1]}% but room.js computes ` +
-          `${value.toFixed(4)}%. The interactive screen would not sit on the drawn glass.`,
-      );
-    }
+async function sceneVariables() {
+  const meta = JSON.parse(await fs.readFile(join(SRC, 'assets', 'scene', 'crt.json'), 'utf8'));
+  const { glass, clip } = meta.screen;
+
+  const skew = Math.max(glass.skew_x, glass.skew_y);
+  if (skew > 0.05) {
+    throw new Error(
+      `The rendered screen is not axis-aligned (skew ${skew.toFixed(3)}%). The camera ` +
+        `must stay level, or the overlay needs a perspective transform instead of a rect.`,
+    );
   }
+
+  const pct = (n) => `${n.toFixed(4)}%`;
+  // Unitless fractions as well as percentages: percentages place the overlay inside
+  // the asset, fractions let a narrow layout solve "put the screen's centre here"
+  // arithmetically instead of by eye.
+  const cx = (glass.left + glass.width / 2) / 100;
+  const cy = (glass.top + glass.height / 2) / 100;
+  const aspect = meta.assetPixels[0] / meta.assetPixels[1];
+  return `/* ---------- generated from src/assets/scene/crt.json ---------- */
+/* ${meta.renderer}, ${meta.samples} samples, asset ${meta.assetPixels.join(' x ')} px */
+.crt {
+  --screen-left: ${pct(glass.left)};
+  --screen-top: ${pct(glass.top)};
+  --screen-width: ${pct(glass.width)};
+  --screen-height: ${pct(glass.height)};
+  /* how much of the tube the front moulding hides, as a clip on the overlay */
+  --screen-clip-top: ${pct(clip.top)};
+  --screen-clip-right: ${pct(clip.right)};
+  --screen-clip-bottom: ${pct(clip.bottom)};
+  --screen-clip-left: ${pct(clip.left)};
+
+  /* the centre of the glass within the asset, and the asset's own aspect */
+  --screen-cx: ${cx.toFixed(6)};
+  --screen-cy: ${cy.toFixed(6)};
+  --crt-aspect: ${aspect.toFixed(6)};
+}
+`;
 }
 
 async function buildStyles() {
@@ -81,6 +103,7 @@ async function buildStyles() {
   const all = await fs.readdir(join(SRC, 'styles'));
   const missed = all.filter((f) => f.endsWith('.css') && !STYLE_ORDER.includes(f));
   if (missed.length) throw new Error(`Stylesheet not listed in STYLE_ORDER: ${missed.join(', ')}`);
+  parts.push(await sceneVariables());
   return parts.join('\n\n');
 }
 
@@ -97,7 +120,6 @@ async function build() {
     written.push(await write(page.out, mod.render()));
   }
 
-  await checkScreenBox();
   written.push(await write('styles.css', await buildStyles()));
   await copyDir(join(SRC, 'assets'), join(OUT, 'assets'));
 

@@ -26,17 +26,36 @@ appear only as *light falling on surfaces* - the screen's spill on the bezel, a 
 along the far edge of the casing, a pool on the desk. Neither is used as a fill, a border
 or a text colour anywhere in the scene.
 
-**The machine is built, not suggested.** `src/components/room.js` draws it as original
-SVG with real construction: a front bezel with a bevelled edge, a right side panel that
-recedes toward a stated vanishing point, punched vents, a moulded seam around the glass,
-a power rocker and four smaller buttons, a lit power LED, a tilt stand, a keyboard whose
-keys are generated across a plane in perspective, and a cable. No image tool was
-available in this environment; nothing is stock and nothing is fetched.
+**The machine is modelled and rendered, not drawn** (revised 2026-09-10). The first
+version was inline SVG and read as flat vector work, which no amount of extra gradient
+or glow was going to fix. It is now a Blender/Cycles render of a machine modelled at
+real size - 400mm across, 420mm deep - with a tapering rear shell, a moulded seam, cut
+ventilation slots, bevelled edges everywhere, physical controls, and a keyboard whose
+keycaps are generated on a plane in perspective at true 19mm pitch. Full provenance,
+including how to re-render it, is in `docs/ASSETS.md`.
 
-**The glass is a real element.** The screen is a `<button>` positioned over the SVG's
-aperture, so the typed line is real DOM text and the flight can animate from its actual
-rect. Those four percentages exist in two files, so `build.mjs` fails the build if they
-drift apart - otherwise the hit area would slide off the drawn glass silently.
+No image-generation tool exists in this environment, and no third-party model or photo
+was used. Blender is installed here, so the machine is built from a script instead:
+`tools/model_crt.py` is the asset's source.
+
+**The glass is a real element.** The render leaves the tube blank on purpose. A
+`<button>` sits over it at the rectangle the renderer measured, so the typed line is
+live DOM text, the hit area is the glass, and the flight animates from its actual rect.
+
+**Why the camera never tilts.** It is level and framed by lens shift. A plane parallel
+to the image plane projects to a similar rectangle wherever it sits in frame, so the
+screen comes out as a true axis-aligned rectangle at exactly 4:3 and the overlay needs
+no perspective transform - which keeps the text crisp. Depth still reads because the
+machine sits well off the optical axis. `build.mjs` generates the overlay's coordinates
+from the render metadata and refuses to build if a future camera change ever skews the
+screen.
+
+**The desktop** (revised 2026-09-10) is an early-2000s Windows-era shell: a saturated
+blue gradient title bar, compact minimise/maximise/close controls, warm-grey surfaces,
+bevelled and inset panels, a menu bar, a status bar with a grip, a green Start tab and a
+tray clock. The era's *construction* is reconstructed; none of its artwork is. There is
+no Microsoft logo, no Luna wallpaper and no borrowed icon set - the Start mark and the
+window icon are this site's lit doorway, and the wallpaper is its night meadow.
 
 **Type.** VT323 for the screen and the desktop's title: a face drawn from a DEC VT320
 terminal, which is what the machine is pretending to be. Karla, already self-hosted,

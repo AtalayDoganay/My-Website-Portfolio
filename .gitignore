@@ -27,3 +27,6 @@ dist/
 
 # Dev-only test vendor (fetched on demand, see README)
 tools/vendor/
+
+# Render master. The shipped assets are the WebP exports beside it.
+src/assets/scene/crt.png

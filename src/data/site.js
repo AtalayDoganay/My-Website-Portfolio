@@ -52,9 +52,18 @@ export const opening = {
   screenDescription:
     'An old computer screen typing a greeting from Atalay Doganay. Activate it to open the desktop.',
 
+  // Describes the rendered machine for anyone who cannot see it.
+  machineAlt:
+    'A beige desktop computer from the late 1990s: a deep CRT monitor on a stand with a blank screen, and a keyboard on the desk in front of it.',
+
   desktopHeading: 'Atalay Doganay',
   desktopNote:
-    'This desktop is where the projects, the about page and the contact details will live. Nothing is here yet. Open Start to go back to the room.',
+    'This is the desktop shell. The projects, the about page and the contact details will live here.',
+  desktopItems: [
+    'Start opens the menu, and the menu goes back to the room',
+    'Close or minimise the window, then bring it back from the taskbar',
+    'Escape also returns to the room',
+  ],
 
   // Shown only when JavaScript is unavailable, so the site is still usable.
   fallback: {

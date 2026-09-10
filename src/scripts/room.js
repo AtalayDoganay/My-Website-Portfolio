@@ -43,6 +43,11 @@
   var startMenu = desktop.querySelector('[data-start-menu]');
   var leaveBtn = desktop.querySelector('[data-leave]');
   var clockEl = desktop.querySelector('[data-clock]');
+  var windowEl = desktop.querySelector('[data-window]');
+  var taskBtn = desktop.querySelector('[data-task]');
+  var restoreBtn = desktop.querySelector('[data-restore]');
+  var closeBtn = desktop.querySelector('[data-window-close]');
+  var minBtn = desktop.querySelector('[data-window-min]');
 
   var reduceQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   var hoverQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
@@ -178,6 +183,7 @@
     state = 'desktop';
     room.dataset.state = 'gone';
     room.inert = true;
+    showWindow(true);   // every arrival looks the same
     // Release the scaled layer a frame later, once the room is out of sight.
     requestAnimationFrame(function () {
       world.style.transform = '';
@@ -238,6 +244,16 @@
     room.inert = false;
     resetIntro();
     if (screenEl) screenEl.focus();
+  }
+
+  // --- The window ---------------------------------------------------------
+  // Minimise and close both put the window away; the taskbar button and the Start
+  // menu bring it back. Nothing here pretends to do something it does not do.
+
+  function showWindow(show) {
+    if (!windowEl) return;
+    windowEl.hidden = !show;
+    if (taskBtn) taskBtn.setAttribute('aria-pressed', show ? 'true' : 'false');
   }
 
   // --- Start menu ---------------------------------------------------------
@@ -317,6 +333,23 @@
 
   if (startBtn) startBtn.addEventListener('click', toggleStartMenu);
   if (leaveBtn) leaveBtn.addEventListener('click', leave);
+
+  if (closeBtn) closeBtn.addEventListener('click', function () {
+    showWindow(false);
+    if (taskBtn) taskBtn.focus();
+  });
+  if (minBtn) minBtn.addEventListener('click', function () {
+    showWindow(false);
+    if (taskBtn) taskBtn.focus();
+  });
+  if (taskBtn) taskBtn.addEventListener('click', function () {
+    showWindow(windowEl.hidden);
+  });
+  if (restoreBtn) restoreBtn.addEventListener('click', function () {
+    showWindow(true);
+    closeStartMenu();
+    if (closeBtn) closeBtn.focus();
+  });
 
   document.addEventListener('click', function (event) {
     if (state !== 'desktop' || !startMenu || startMenu.hidden) return;

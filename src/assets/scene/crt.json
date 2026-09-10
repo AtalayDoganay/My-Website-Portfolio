@@ -1,0 +1,38 @@
+{
+  "generatedBy": "tools/model_crt.py",
+  "note": "Modelled and rendered from scratch. No third-party mesh, texture or image.",
+  "renderer": "Blender 5.1.1 / Cycles, OptiX",
+  "renderResolution": [
+    2600,
+    2340
+  ],
+  "assetPixels": [
+    2600,
+    1642
+  ],
+  "samples": 300,
+  "screen": {
+    "glass": {
+      "left": 25.968116521835327,
+      "top": 7.006091089980466,
+      "width": 30.372053384780884,
+      "height": 36.069126933559,
+      "skew_x": 0.0,
+      "skew_y": 0.0
+    },
+    "aperture": {
+      "left": 25.287359952926636,
+      "top": 7.231348948995612,
+      "width": 30.651336908340454,
+      "height": 36.400800210114085,
+      "skew_x": 0.0,
+      "skew_y": 0.0
+    },
+    "clip": {
+      "top": 0.6245170819634219,
+      "right": 1.3218501899193125,
+      "bottom": 0.0,
+      "left": 0.0
+    }
+  }
+}

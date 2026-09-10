@@ -66,6 +66,8 @@ What each check covers, and what is still unavailable, is in `docs/RELEASE-CHECK
 | `src/pages/` | One module per page |
 | `src/components/` | Page shell, the scenes, and the reusable pieces |
 | `src/scripts/room.js` | The opening scene's behaviour. Timing is in `TUNING` at the top |
+| `src/assets/scene/` | The rendered computer and the metadata that positions its screen |
+| `tools/model_crt.py` | Models and renders that computer in Blender. See `docs/ASSETS.md` |
 | `src/styles/` | Design tokens and stylesheets, concatenated at build time |
 | `src/assets/fonts/` | Self-hosted Fraunces and Karla, with their licences |
 | `build.mjs` / `serve.mjs` | The build and the preview server |
@@ -85,6 +87,7 @@ that file and in `CLAUDE.md`.
 |---|---|
 | `docs/PROJECT-BRIEF.md` | Goals, audiences, confirmed facts, and the stack and design decisions |
 | `docs/DESIGN-NOTES.md` | Palette, type, the scene, motion, and measured contrast |
+| `docs/ASSETS.md` | Where every asset came from, and how to regenerate the render |
 | `docs/CONTENT-SOURCES.md` | The source of every claim on the site, and what is still missing |
 | `docs/HOSTING-DECISIONS.md` | Open hosting, domain, DNS and deployment decisions |
 | `docs/RELEASE-CHECKS.md` | Which checks are active and which to activate when |

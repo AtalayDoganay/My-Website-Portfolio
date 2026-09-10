@@ -13,7 +13,12 @@ export const render = () =>
       'Atalay Doganay is a computer science student at Cal Poly Pomona who builds browser games and small apps.',
     content: `${room({
       description: opening.screenDescription,
+      machineAlt: opening.machineAlt,
       fallback: opening.fallback,
     })}
-${desktop({ heading: opening.desktopHeading, note: opening.desktopNote })}`,
+${desktop({
+      heading: opening.desktopHeading,
+      note: opening.desktopNote,
+      items: opening.desktopItems,
+    })}`,
   });
