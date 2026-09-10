@@ -34,9 +34,14 @@ async function write(relPath, contents) {
   return target;
 }
 
+// Build inputs that live beside the assets but must never be served: the lossless
+// render master is 2.6 MB and the browser only ever wants the WebP exports.
+const NOT_SHIPPED = new Set(['crt.png']);
+
 async function copyDir(from, to) {
   await fs.mkdir(to, { recursive: true });
   for (const entry of await fs.readdir(from, { withFileTypes: true })) {
+    if (NOT_SHIPPED.has(entry.name)) continue;
     const src = join(from, entry.name);
     const dest = join(to, entry.name);
     if (entry.isDirectory()) await copyDir(src, dest);
