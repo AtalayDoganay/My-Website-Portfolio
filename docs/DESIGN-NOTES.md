@@ -9,6 +9,51 @@ left-aligned headings, thin-bordered cards, generous negative space. That *struc
 adapted. None of its branding, colour, type, imagery or copy was reused — the reference
 is dark, sans-serif and video-led; this is none of those things.
 
+## The home page is a different place (added 2026-09-10)
+
+The home page no longer shows the meadow or the editorial column. It is a full-viewport
+scene: a large beige CRT computer standing on a desk in a dark, hazy room, with the
+introduction typed on its screen. Clicking, tapping or pressing Enter on the glass flies
+you into the screen and lands on an early-2000s-inspired desktop.
+
+The inner pages are unchanged and still use the light meadow shell described below.
+
+**Why beige.** The obvious palette for "dreamcore plus cyberpunk" is a near-black ground
+with a neon accent, which is one of the commonest generated-design defaults. The machine
+is putty-coloured instead, which is what these computers actually were, and a warm beige
+object under cold violet light is the opposite of a synthwave picture. Cyan and pink
+appear only as *light falling on surfaces* - the screen's spill on the bezel, a thin rim
+along the far edge of the casing, a pool on the desk. Neither is used as a fill, a border
+or a text colour anywhere in the scene.
+
+**The machine is built, not suggested.** `src/components/room.js` draws it as original
+SVG with real construction: a front bezel with a bevelled edge, a right side panel that
+recedes toward a stated vanishing point, punched vents, a moulded seam around the glass,
+a power rocker and four smaller buttons, a lit power LED, a tilt stand, a keyboard whose
+keys are generated across a plane in perspective, and a cable. No image tool was
+available in this environment; nothing is stock and nothing is fetched.
+
+**The glass is a real element.** The screen is a `<button>` positioned over the SVG's
+aperture, so the typed line is real DOM text and the flight can animate from its actual
+rect. Those four percentages exist in two files, so `build.mjs` fails the build if they
+drift apart - otherwise the hit area would slide off the drawn glass silently.
+
+**Type.** VT323 for the screen and the desktop's title: a face drawn from a DEC VT320
+terminal, which is what the machine is pretending to be. Karla, already self-hosted,
+carries the taskbar at small tight sizes. Both OFL, both self-hosted, still nothing
+fetched from a third party.
+
+**The flight.** Clicking scales the whole room around the screen's centre until the glass
+covers the viewport, so the bezel and the room leave the frame rather than a panel
+appearing over them. The screen's wallpaper fades up as it grows and the real desktop
+crossfades in over the last 40%, which is why nothing sharp is ever scaled and no text
+stretches. 1.4 s on a slow-in, slow-out curve. Under `prefers-reduced-motion` the whole
+thing is a 160 ms fade and the introduction is shown complete, without the typewriter.
+
+**One script.** The home page is the only page that loads JavaScript, and it is one
+same-origin file with no inline code and no inline handlers. `npm test` enforces exactly
+that, and still enforces zero script on the other four pages.
+
 ## The one bold thing
 
 A doorway standing by itself in a wide meadow, lit from inside, under drifting cloud.

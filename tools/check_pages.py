@@ -148,7 +148,12 @@ SAMPLE_JS = r"""
 
 
 def sample_band_behind_text(browser, page, out):
-    """Return the darkest and lightest pixel the scene paints behind the masthead."""
+    """Return the darkest and lightest pixel the scene paints behind the masthead.
+
+    The home page is an immersive scene with no masthead; there is nothing to sample.
+    """
+    if not page.query_selector(".masthead"):
+        return None
     box = page.evaluate(
         "() => { const m = document.querySelector('.masthead');"
         " const r = m.getBoundingClientRect();"
@@ -300,6 +305,8 @@ def main():
 
                 # Text sitting on the scene, checked against the artwork's real pixels.
                 sky = sample_band_behind_text(browser, page, out)
+                if sky is None:
+                    continue
                 worst = tuple(sky["darkest"])
                 for item in page.evaluate(
                     "() => [...document.querySelectorAll('.masthead a')].map((el) => ({"

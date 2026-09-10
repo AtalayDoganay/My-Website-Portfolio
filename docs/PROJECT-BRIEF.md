@@ -75,6 +75,11 @@ single atmospheric scene — a lit doorway standing alone in a meadow under drif
 Faded sky blue, misty lavender, muted meadow green, soft ivory. See `docs/DESIGN-NOTES.md`
 for the palette, type, motion and the reasoning behind each.
 
+**Updated 2026-09-10:** the home page was redesigned around an interactive early-2000s
+computer - dreamcore, cyberpunk lighting and Windows nostalgia - which you click into to
+reach a desktop. The desktop's portfolio surface is the next piece of work. The inner
+pages keep the light meadow design described here. See `docs/DESIGN-NOTES.md`.
+
 The structural reference was the contact page at `phillipche.com`: narrow centred column,
 compact horizontal navigation, thin-bordered cards, generous negative space. Structure only
 — no branding, colour, type, imagery or copy was taken from it.

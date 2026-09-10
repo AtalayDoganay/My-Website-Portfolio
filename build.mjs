@@ -15,6 +15,8 @@ const STYLE_ORDER = [
   'layout.css',
   'scene.css',
   'components.css',
+  'room.css',
+  'desktop.css',
 ];
 
 const PAGES = [
@@ -39,6 +41,34 @@ async function copyDir(from, to) {
     const dest = join(to, entry.name);
     if (entry.isDirectory()) await copyDir(src, dest);
     else await fs.copyFile(src, dest);
+  }
+}
+
+/**
+ * The interactive screen is an HTML element laid over an aperture drawn in SVG.
+ * Two files therefore hold the same four numbers, and a silent drift between them
+ * would slide the hit area off the glass without anything failing. Check it.
+ */
+async function checkScreenBox() {
+  const { SCREEN_BOX } = await import(
+    `${pathToFileURL(join(process.cwd(), SRC, 'components', 'room.js')).href}?v=${Date.now()}`
+  );
+  const css = await fs.readFile(join(SRC, 'styles', 'room.css'), 'utf8');
+  const expected = {
+    '--screen-left': SCREEN_BOX.left,
+    '--screen-top': SCREEN_BOX.top,
+    '--screen-width': SCREEN_BOX.width,
+    '--screen-height': SCREEN_BOX.height,
+  };
+  for (const [prop, value] of Object.entries(expected)) {
+    const found = css.match(new RegExp(`${prop}:\\s*([\\d.]+)%`));
+    if (!found) throw new Error(`room.css is missing ${prop}`);
+    if (Math.abs(Number(found[1]) - value) > 0.01) {
+      throw new Error(
+        `Screen aperture drift: room.css has ${prop}: ${found[1]}% but room.js computes ` +
+          `${value.toFixed(4)}%. The interactive screen would not sit on the drawn glass.`,
+      );
+    }
   }
 }
 
@@ -67,8 +97,18 @@ async function build() {
     written.push(await write(page.out, mod.render()));
   }
 
+  await checkScreenBox();
   written.push(await write('styles.css', await buildStyles()));
   await copyDir(join(SRC, 'assets'), join(OUT, 'assets'));
+
+  // Client scripts are copied verbatim: no bundler, no transform, nothing minified
+  // into something that cannot be read in the browser's sources panel.
+  const scriptDir = join(SRC, 'scripts');
+  if (await fs.stat(scriptDir).then(() => true, () => false)) {
+    for (const name of await fs.readdir(scriptDir)) {
+      if (name.endsWith('.js')) written.push(await write(name, await fs.readFile(join(scriptDir, name))));
+    }
+  }
   for (const extra of ['robots.txt']) {
     const path = join(SRC, extra);
     if (await fs.stat(path).then(() => true, () => false)) written.push(await write(extra, await fs.readFile(path)));

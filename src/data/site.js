@@ -27,6 +27,8 @@ export const nav = [
   { label: 'Contact', href: '/contact/' },
 ];
 
+// Not currently rendered: the home page is the opening scene. Kept because this is
+// the introduction text the desktop will want when its portfolio surface is built.
 export const home = {
   title: 'Atalay Doganay',
   lead: 'Computer science student at Cal Poly Pomona. I make browser games and small apps, and I am most interested in software engineering and indie game development.',
@@ -35,6 +37,35 @@ export const home = {
   ],
   selectedHeading: 'Selected work',
   selectedNote: 'Two things I have been building.',
+};
+
+// ---------------------------------------------------------------------------
+// The opening scene. The home page is the computer; the name is introduced on
+// its screen and nowhere else on that view.
+//
+// The two typed lines live in src/scripts/room.js, next to the timing they are
+// animated with. Everything here is the text that has to exist without it.
+// ---------------------------------------------------------------------------
+export const opening = {
+  // A stable description for assistive tech. The typed characters are hidden
+  // from screen readers, so this is what the screen is, not what it currently says.
+  screenDescription:
+    'An old computer screen typing a greeting from Atalay Doganay. Activate it to open the desktop.',
+
+  desktopHeading: 'Atalay Doganay',
+  desktopNote:
+    'This desktop is where the projects, the about page and the contact details will live. Nothing is here yet. Open Start to go back to the room.',
+
+  // Shown only when JavaScript is unavailable, so the site is still usable.
+  fallback: {
+    line: 'Hii, my name is Atalay Doganay...',
+    note: 'The opening scene needs JavaScript. The rest of the site does not.',
+    links: [
+      { label: 'Projects', href: '/projects/' },
+      { label: 'About', href: '/about/' },
+      { label: 'Contact', href: '/contact/' },
+    ],
+  },
 };
 
 export const about = {

@@ -1,0 +1,279 @@
+/* ===========================================================================
+   The desktop behind the glass. Early-2000s in construction - beveled edges,
+   a bottom taskbar, small tight UI type - but built from this site's own
+   colours and its own marks. No borrowed logos, icons, or wallpaper.
+   ========================================================================= */
+
+.desktop {
+  --bar-h: 2.9rem;
+  --chrome: #35314f;
+  --chrome-lit: #6d6796;
+  --chrome-dim: #1b1830;
+  --chrome-text: #e6e3f5;
+  --accent: #6fe3f5;
+
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  font-family: var(--face-text);
+  opacity: 0;
+  transition: opacity 380ms ease;
+}
+
+.desktop[hidden] { display: none; }
+.desktop[data-shown] { opacity: 1; }
+
+/* ------------------------------------------------------------- wallpaper */
+
+.desktop__wall { position: absolute; inset: 0; }
+.desktop__wall > span { position: absolute; display: block; }
+
+.wall__sky {
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    #120f2c 0%,
+    #1b1742 34%,
+    #2c2059 56%,
+    #241f47 66%,
+    #16203a 74%,
+    #0d1626 100%
+  );
+}
+
+.wall__moon {
+  right: 12%;
+  top: 6%;
+  width: min(42vw, 30rem);
+  aspect-ratio: 1;
+  background: radial-gradient(
+    circle at 50% 50%,
+    #fffaf0 0%,
+    #f6e8c6 13%,
+    #dccca2 18.5%,
+    rgb(255 246 222 / 0.2) 21%,
+    rgb(255 246 222 / 0.07) 42%,
+    transparent 68%
+  );
+}
+
+.wall__ridge { inset-inline: -5%; }
+.wall__ridge--far {
+  top: 62%;
+  height: 14%;
+  background: linear-gradient(180deg, rgb(90 104 150 / 0.5), rgb(60 72 112 / 0.75));
+  clip-path: polygon(0 54%, 18% 40%, 34% 50%, 52% 34%, 70% 47%, 86% 38%, 100% 46%, 100% 100%, 0 100%);
+}
+.wall__ridge--near {
+  top: 70%;
+  height: 30%;
+  background: linear-gradient(180deg, #1d2b3c 0%, #101a26 100%);
+  clip-path: polygon(0 34%, 22% 25%, 42% 33%, 62% 22%, 80% 31%, 100% 26%, 100% 100%, 0 100%);
+}
+
+/* The doorway from the rest of the site, standing far off in the field. */
+.wall__door {
+  left: 22%;
+  bottom: 20%;
+  width: min(2.4vw, 1.5rem);
+  height: min(5.2vw, 3.3rem);
+  border: 0.18rem solid #b9b09a;
+  border-bottom: 0;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, #fdf6e2 0%, #edd9a8 100%);
+  opacity: 0.9;
+  filter: drop-shadow(0 0 1.4rem rgb(246 231 192 / 0.45));
+}
+
+.wall__mist {
+  inset-inline: 0;
+  top: 58%;
+  height: 22%;
+  background: linear-gradient(180deg, transparent, rgb(150 178 220 / 0.16) 55%, transparent);
+  filter: blur(18px);
+}
+
+/* --------------------------------------------------------------- surface */
+
+.desktop__surface {
+  position: absolute;
+  inset: 0 0 var(--bar-h) 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.plaque {
+  max-width: 30rem;
+  padding: 1.6rem 1.9rem;
+  border: 1px solid rgb(111 227 245 / 0.3);
+  border-radius: 10px;
+  background: rgb(12 14 32 / 0.55);
+  backdrop-filter: blur(6px);
+  text-align: center;
+  color: #e9e9f7;
+}
+
+.plaque__title {
+  margin: 0;
+  font-family: var(--face-crt);
+  font-size: clamp(1.6rem, 1.1rem + 2vw, 2.4rem);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: #f2fbff;
+  text-shadow: 0 0 0.5em rgb(111 227 245 / 0.4);
+}
+
+.plaque__note {
+  margin: 0.6rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #b9bcd6;
+}
+
+/* --------------------------------------------------------------- taskbar */
+
+.taskbar {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--bar-h);
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+  padding: 0.22rem 0.3rem;
+  background: linear-gradient(180deg, #46416a 0%, var(--chrome) 12%, #2b2743 88%, #221e38 100%);
+  border-top: 1px solid var(--accent);
+  box-shadow: 0 -1px 0 rgb(255 255 255 / 0.12) inset;
+}
+
+.tb-gap { flex: 1; }
+
+/* One bevel recipe, used by every raised control in this interface. */
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.8rem;
+  border: 2px solid;
+  border-color: var(--chrome-lit) var(--chrome-dim) var(--chrome-dim) var(--chrome-lit);
+  background: linear-gradient(180deg, #423d63 0%, #322e4c 100%);
+  color: var(--chrome-text);
+  font-family: var(--face-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.tb-btn:hover { background: linear-gradient(180deg, #4c4772 0%, #383353 100%); }
+
+.tb-btn:active,
+.tb-btn[aria-expanded='true'] {
+  border-color: var(--chrome-dim) var(--chrome-lit) var(--chrome-lit) var(--chrome-dim);
+  background: linear-gradient(180deg, #2c2844 0%, #363152 100%);
+}
+
+.tb-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -5px;
+}
+
+/* The Start mark is this site's doorway, not anybody's logo. */
+.tb-start__glyph {
+  width: 0.78rem;
+  height: 1.05rem;
+  border: 2px solid #cfcbe6;
+  border-bottom: 0;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, #fffdf4, #f6e7c0);
+  box-shadow: 0 0 0.5rem rgb(246 231 192 / 0.6);
+}
+
+.tb-tray {
+  display: flex;
+  align-items: center;
+  padding: 0 0.7rem;
+  border: 2px solid;
+  border-color: var(--chrome-dim) var(--chrome-lit) var(--chrome-lit) var(--chrome-dim);
+  background: rgb(24 21 40 / 0.75);
+}
+
+.tb-clock {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--chrome-text);
+  letter-spacing: 0.01em;
+}
+
+/* ------------------------------------------------------------ start menu */
+
+.start-menu {
+  position: absolute;
+  left: 0.3rem;
+  bottom: var(--bar-h);
+  z-index: 3;
+  display: flex;
+  min-width: 14rem;
+  padding: 0.25rem;
+  border: 2px solid;
+  border-color: var(--chrome-lit) var(--chrome-dim) var(--chrome-dim) var(--chrome-lit);
+  background: linear-gradient(180deg, #3b3659 0%, #2e2a48 100%);
+  box-shadow: 0.3rem -0.3rem 0 rgb(0 0 0 / 0.35);
+}
+
+.start-menu[hidden] { display: none; }
+
+.start-menu__rail {
+  width: 1.5rem;
+  margin-right: 0.25rem;
+  background: linear-gradient(180deg, var(--accent), #7a6ad8 60%, #3b3659 100%);
+  opacity: 0.7;
+}
+
+.start-menu__list {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.start-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 0;
+  background: transparent;
+  color: var(--chrome-text);
+  font-family: var(--face-text);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.start-menu__item:hover { background: var(--accent); color: #11132a; }
+.start-menu__item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.start-menu__icon {
+  width: 0.62rem;
+  height: 0.85rem;
+  border: 2px solid currentColor;
+  border-bottom: 0;
+  border-radius: 2px 2px 0 0;
+  opacity: 0.8;
+}
+
+@media (max-width: 34rem) {
+  .desktop { --bar-h: 3rem; }
+  .plaque { padding: 1.2rem 1.3rem; }
+  .wall__moon { right: 12%; top: 12%; width: 26vw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop { transition-duration: 160ms; }
+}

@@ -4,7 +4,9 @@ Personal portfolio website for Atalay Doganay.
 
 ## Status
 
-**A first working local version.** Four pages build and run on a local preview server.
+**A first working local version.** Five pages build and run on a local preview server.
+The home page is an interactive scene - an old computer you enter; the rest of the site
+is a quiet light-themed portfolio.
 
 Not hosted. Not deployed. The domain `atalaydoganay.com` is a target, not a connected
 domain, and no hosting account exists. Nothing on the site has been published, and the
@@ -26,9 +28,14 @@ not in development.
 ## Checks
 
 ```bash
-npm test                        # escaping, URL schemes, no shipped JavaScript
+npm test                        # escaping, URL schemes, script policy
 node tools/check_links.mjs      # every internal link and fragment resolves
 ```
+
+`tools/check_room.py` drives the home page's opening sequence: it records every frame of
+the typed introduction with timestamps and checks both the exact text and the measured
+timing, then exercises hover, pointer leave, keyboard entry, touch entry, repeated clicks
+mid-transition, arrival, return and replay, mobile layout and reduced motion.
 
 `tools/check_pages.py` drives real Chromium over all five pages at desktop and phone
 widths: console errors, failed requests, horizontal overflow, colour contrast (including
@@ -57,11 +64,13 @@ What each check covers, and what is still unavailable, is in `docs/RELEASE-CHECK
 |---|---|
 | `src/data/site.js` | **All the content.** Edit this to change what the site says |
 | `src/pages/` | One module per page |
-| `src/components/` | Page shell, the scene, and the reusable pieces |
+| `src/components/` | Page shell, the scenes, and the reusable pieces |
+| `src/scripts/room.js` | The opening scene's behaviour. Timing is in `TUNING` at the top |
 | `src/styles/` | Design tokens and stylesheets, concatenated at build time |
 | `src/assets/fonts/` | Self-hosted Fraunces and Karla, with their licences |
 | `build.mjs` / `serve.mjs` | The build and the preview server |
 | `tools/check_pages.py` | Browser checks: contrast, axe, focus, overflow, reduced motion |
+| `tools/check_room.py` | Drives the whole opening sequence in a browser and measures it |
 | `tools/check_escaping.mjs` | Proves data cannot become markup, and self-tests that it can detect injection |
 | `tools/check_links.mjs` | Internal link and fragment resolution |
 | `dist/` | Build output. Not committed |

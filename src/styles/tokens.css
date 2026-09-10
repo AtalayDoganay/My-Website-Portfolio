@@ -31,6 +31,8 @@
   /* --- Type ------------------------------------------------------------- */
   --face-display: 'Fraunces', Georgia, 'Times New Roman', serif;
   --face-text: 'Karla', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* A monospace fallback keeps the terminal line from reflowing before VT323 lands. */
+  --face-crt: 'VT323', ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
 
   --step--1: 0.8125rem;  /* 13px - captions                */
   --step-0:  1.0625rem;  /* 17px - body                    */

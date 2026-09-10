@@ -60,6 +60,20 @@ img { height: auto; }
   white-space: nowrap;
 }
 
+/* The home page is a single fixed composition: no scrolling, no document flow. */
+.immersive,
+.immersive__body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.immersive__body {
+  margin: 0;
+  background: #05060f;
+  color: #e6e9f5;
+}
+
 /* A film of grain over the whole page. Purely atmospheric: it never intercepts
    a click and it sits at 5% so it cannot affect text contrast meaningfully. */
 .grain {
@@ -71,6 +85,12 @@ img { height: auto; }
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 180px 180px;
+}
+
+/* Multiplying grain onto a dark scene only makes mud; on dark it has to add light. */
+.grain--dark {
+  mix-blend-mode: overlay;
+  opacity: 0.085;
 }
 
 /* Cross-document view transitions, where the browser supports them: the sky is
