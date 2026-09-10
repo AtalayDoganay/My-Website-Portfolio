@@ -1,0 +1,20 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Secrets - never commit real values; only *.example files belong in the repo
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+
+# Local
+node_modules/
+tmp/

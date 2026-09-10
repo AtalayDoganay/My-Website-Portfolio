@@ -1,0 +1,49 @@
+﻿{
+    "manifestVersion":  1,
+    "skills":  {
+                   "web-build":  {
+                                     "origin":  "local:C:\\Users\\atala\\Projects\\Atalay\\claude-web-toolkit",
+                                     "toolkit":  "claude-web-toolkit",
+                                     "sourceRevision":  "d98bbdc1d5faad238ce8eb1ce17e91dfe6325d66",
+                                     "sourceRevisionDirty":  false,
+                                     "installedAt":  "2026-09-10T03:43:55Z",
+                                     "installedPath":  ".claude/skills/web-build",
+                                     "files":  {
+                                                   "SKILL.md":  "57c5cf9495354cb989b6c9e4beec84c9ebba7f4f355fc05164a2a8a8313bcf0f"
+                                               }
+                                 },
+                   "web-design-review":  {
+                                             "origin":  "local:C:\\Users\\atala\\Projects\\Atalay\\claude-web-toolkit",
+                                             "toolkit":  "claude-web-toolkit",
+                                             "sourceRevision":  "d98bbdc1d5faad238ce8eb1ce17e91dfe6325d66",
+                                             "sourceRevisionDirty":  false,
+                                             "installedAt":  "2026-09-10T03:43:55Z",
+                                             "installedPath":  ".claude/skills/web-design-review",
+                                             "files":  {
+                                                           "SKILL.md":  "75d6ba37547512d4c17036d4859e2649d91b06c5fffabbe351863dcd3298943c"
+                                                       }
+                                         },
+                   "web-security-review":  {
+                                               "origin":  "local:C:\\Users\\atala\\Projects\\Atalay\\claude-web-toolkit",
+                                               "toolkit":  "claude-web-toolkit",
+                                               "sourceRevision":  "d98bbdc1d5faad238ce8eb1ce17e91dfe6325d66",
+                                               "sourceRevisionDirty":  false,
+                                               "installedAt":  "2026-09-10T03:43:55Z",
+                                               "installedPath":  ".claude/skills/web-security-review",
+                                               "files":  {
+                                                             "SKILL.md":  "31b9ac298b7ea8ccab3c81a6b610ed937e6af4f709c32c91918231d81108618f"
+                                                         }
+                                           },
+                   "web-release-check":  {
+                                             "origin":  "local:C:\\Users\\atala\\Projects\\Atalay\\claude-web-toolkit",
+                                             "toolkit":  "claude-web-toolkit",
+                                             "sourceRevision":  "d98bbdc1d5faad238ce8eb1ce17e91dfe6325d66",
+                                             "sourceRevisionDirty":  false,
+                                             "installedAt":  "2026-09-10T03:43:55Z",
+                                             "installedPath":  ".claude/skills/web-release-check",
+                                             "files":  {
+                                                           "SKILL.md":  "71663116ae40e22f267e3023934a76c688896c8f72186be68d2da11d3978d2ae"
+                                                       }
+                                         }
+               }
+}
