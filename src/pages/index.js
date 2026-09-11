@@ -15,6 +15,7 @@ export const render = () =>
       description: opening.screenDescription,
       machineAlt: opening.machineAlt,
       fallback: opening.fallback,
+      opening,
     })}
 ${desktop({
       heading: opening.desktopHeading,

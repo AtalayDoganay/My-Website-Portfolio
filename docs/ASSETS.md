@@ -22,14 +22,77 @@ output is no longer part of the site.
 
 | File | Grid | Dark | Light |
 |---|---|---|---|
-| `machine-{theme}.png` | 216 x 150 | 1021 B | 1016 B |
-| `machine-compact-{theme}.png` | 120 x 126 | 605 B | 594 B |
+| `machine-{theme}.png` | 340 x 180 | 2119 B | 2132 B |
+| `machine-compact-{theme}.png` | 120 x 168 | 1396 B | 1397 B |
 | `wallpaper-{theme}.png` | 240 x 150 | 1087 B | 1086 B |
 
-**Two framings, not one scaled down.** A 216-wide picture on a 390-wide phone can only
-be shown at 1x before it runs off the screen, which leaves the tube far too small to
-read. Narrow and short viewports therefore get their own composition — the monitor
-alone, drawn larger on a smaller canvas — rather than a shrunken copy of the wide one.
+`tools/pixel_art.py` owns the PNG writer, the canvas and the two palettes;
+`tools/pixel_art_scene.py` owns the picture. The split exists because the geometry is
+the part that gets edited, and it should not be buried under the plumbing.
+
+**The stand is one assembly, not stacked slabs.** Real CRT pedestals are built as a
+rocker fixed to the flat underside of the casing, seated into a recess in a broad
+pedestal whose top is a flat ring (US4575033A) - there is no thin post anywhere in one.
+An earlier version outlined each piece on all four sides, and an outline between two
+parts that are JOINED is a seam, which is exactly what the eye uses to separate them.
+Now the silhouette is a single stepped polygon, the outline runs only around the
+outside, and every internal junction is an overlap with a shadow under it.
+
+**Shadows start on the object's own contact row.** `contact()` is given the row
+immediately after an object's last drawn pixel. Starting a row lower - which is what it
+used to do - left a strip of bare tabletop between every object and its shadow and made
+the whole group look like it was hovering. `cast()` draws the separate, lighter, longer
+shadow each tall object throws, stepping down and to the right, because the light is up
+and to the left for everything on this desk.
+
+**Volume comes from planes, not from shading one tone.** Every object with depth is
+built the same way: a lit TOP (`case_top`), a FRONT turned toward us (`case_front`), a
+LEFT SIDE turned away (`case_side`), a bright EDGE where two planes meet toward the
+light (`case_edge`), and a dark RECESS or underside (`case_deep`). The light is up and
+to the left and it stays there. The monitor's stand is a collar, a neck and a base, each
+carrying all of those; the keycaps have a lit top and a front face and drop a shadow on
+the deck behind them; the mouse has a stepped silhouette, two lit button pads, a dark
+split running to the far edge and a dark underside.
+
+**The equipment is beige; the desk is lavender; the room is navy.** Three materials,
+three palettes. That separation is load-bearing rather than decorative: a machine's lit
+top face and the tabletop were once the same value, and anything lying flat on the desk
+- the mouse, the keycaps - vanished into it with only its outline left.
+
+**One projection, and contact points.** Depth runs back and to the LEFT on a 2:1 step,
+for the desk, the monitor, the tower, the keyboard and the mouse alike. Every object is
+placed by its CONTACT POINT — the y where its base meets the tabletop — and the tabletop
+runs from y=102 at the back to y=138 at the front, so those numbers are positions within
+a real surface rather than guesses. Front to back on the wide grid: 108 tower, 114
+monitor base, 120 the keyboard's back edge, 134 the mouse. Each object has a two-row
+contact shadow directly beneath it, hard-edged like everything else here.
+
+Both cables start *underneath* the object they belong to and end *inside* the tower's
+front face, so each emerges from behind one and disappears behind the other rather than
+terminating in open tabletop. They are drawn before the objects, which is what puts them
+behind the tower and the keyboard deck. Neither crosses the monitor base, the deck or
+the case.
+
+**The desk is a different material from the machines.** It has to be: a machine's lit
+top face and the tabletop would otherwise be the same value, and the mouse and the
+keycaps — which lie flat on the desk — would vanish into it with only their outlines
+left. `desk_top`, `desk_front`, `desk_side` and `desk_edge` are separate palette entries,
+mirrored in `src/styles/tokens.css`.
+
+**The desk leaves the frame on three sides.** It runs off both sides, and its legs run
+off the bottom, because the page bottom-aligns the artwork. A visible end would have to
+be a parallelogram as wide as the depth step, which at this scale reads as a ramp rather
+than as furniture. Since the artwork is centred and narrower than the window, the page
+continues the tabletop's rows out to both edges with a CSS band — see below.
+
+**Two framings, not one scaled down.** Raster pixel art is only ever shown at a
+whole-number multiple, so the canvas WIDTH decides the scale a phone can reach. 120
+divides 360 exactly and fits three times into 390, 412 and 430, so every common phone
+lands on 3x; a wider canvas drops to 2x on the same screens and the tube comes out
+*smaller in real pixels* despite being bigger on the grid. The narrow framing is
+therefore a different composition, not a smaller one: a much larger monitor, the tower
+showing the part of itself the monitor does not hide, and the keyboard and mouse
+tightened in front of them.
 
 **Two themes, one geometry.** The dark and light variants run the same drawing code
 with different palettes. That is verified rather than asserted: the two images have
@@ -41,6 +104,81 @@ anything.
 grid unit thick, on the machine, the keyboard, the windows, the buttons and the
 taskbar. The CSS palettes in `src/styles/tokens.css` mirror the palettes in the
 generator, so a window border and the monitor's outline are the same value.
+
+## The opening
+
+ONE SCENE, ONE CAMERA. `.room__world` holds every physical thing - wall, grain, the
+tube's glow, the tabletop band that continues the desk past the artwork, and the monitor,
+bezel, stand, tower, keyboard, mouse and cables - and a single transform on that element
+is the camera. There are exactly two poses: CLOSE, where the glass covers the viewport,
+and REST, the finished composition at `translate(0,0) scale(1)`. The opening starts at
+CLOSE and pulls back; clicking pushes back in and hands over to the desktop. Because one
+transform moves the whole scene, the equipment and the desk necessarily change size
+together and things outside the first frame arrive as the camera retreats.
+
+Six states live on `[data-room]`: `boot`, `typing`, `revealing-room`, `room-ready`,
+`entering-desktop`, `desktop`. Skip, sound and the theme switch are siblings of the
+world, never children, so the camera does not carry them.
+
+**The text is attached to the glass, not a panel over it.** The introduction is printed
+into `.crt__glass`, which has `overflow: hidden`, so it is clipped by the physical screen
+at every frame of the move including the first. An earlier version used a separate
+full-viewport terminal that shrank onto the glass; it read as a card floating over an
+already-settled room, which is exactly what a shared camera avoids.
+
+**The scale is interpolated geometrically.** Linear interpolation of a 5x pullback spends
+most of its time within a whisker of the finished size - halfway through it is already at
+1.3x, so the midpoint shows a settled room rather than enlarged equipment. Interpolating
+the ratio instead makes each equal slice of time cover an equal factor, which is what
+reads as a constant-speed dolly: halfway through 5x is sqrt(5) = 2.24x. The path is
+sampled into 31 keyframes because the ease lives in the geometry, not in a timing
+function; `smoothstep` eases both ends and is exactly linear through the middle.
+
+**How far in the camera may go is limited by the text.** A tall portrait phone needs 5.9x
+to cover a 4:3 tube, and at 5.9x a thirty-character line is more than twice the width of
+the screen. So the push-in is capped by the longest line's reach from the middle of the
+glass - measured, not guessed - and the line wins. On a phone that lands at about 2.1x;
+on a laptop the cover scale is already the smaller of the two and nothing changes.
+
+**One timer.** Each step of the introduction schedules the next, so there is never a
+second one behind it and a backgrounded tab cannot build a queue - and if the opening
+outlives its whole budget while hidden, it resolves to the finished room. The invitation
+is a CSS animation on a container: no timer, nothing accumulating, and stopping it is one
+attribute. Every duration is in `TUNING` in `src/scripts/room.js`, and the reveal and
+handover are published to CSS as custom properties so the transition and the timer that
+ends it cannot drift apart.
+
+**It does not replay.** Completing or skipping the introduction records it in
+`sessionStorage`, so moving between pages and back, or returning from the desktop, gets
+the finished room. A new tab is a new session and sees it again.
+
+**The finished monitor holds a real button.** The introduction is spoken once, during
+the opening; it clears part way through the pullback and a `<button>` takes the glass,
+centred horizontally and on 65% of the glass height. `.crt__screen` is a plain div, so
+there is no button inside a button. The key has a top face on a lower edge and travels
+down onto its own base when pressed.
+
+**The invitation is one CSS cycle.** A gloved hand above and right of the button points
+down-left at it, on a 2000ms loop with named phases: anticipation, dip, contact, burst,
+release, rest. It costs no timer and nothing accumulates, so stopping it is a single
+attribute. The fingertip lands ON the button's top face; `tools/check_room.py` measures
+that from the hand's and the button's live rects rather than trusting an offset. The
+hand's proportions come from Kenney's CC0 Cursor Pixel Pack (tiles 0134-0137): a short
+thick finger against a chunky palm, and a read that comes from the silhouette and its
+outline. Nothing is copied - those cursors are flat white, and this one is drawn in our
+own palette with a cuff, folded fingers and deliberate highlight and shadow pixels.
+
+**The burst belongs to the button.** Nine pieces - three exclamation marks, two question
+marks, four stars - launch from the button's top edge, arc outward, rotate in stepped
+frames and fade over about 700ms, well clear of the next cycle. Travel is in container
+units of the glass, so it scales with the screen instead of being clipped; the checks
+confirm zero pieces leave the glass at every size. A real activation fires the same
+burst once and leaves it up while the camera starts moving, rather than deleting it on
+the triggering frame.
+
+**Audio never gates it.** The introduction always runs silently. The sound control
+creates and resumes the AudioContext on a real click; beeps are played by the step that
+is happening now or not at all, so nothing is ever queued or replayed.
 
 ## How the live text is aligned
 
@@ -54,6 +192,31 @@ the uneven pixel widths this direction exists to avoid.
 `build.mjs` turns it into the CSS custom properties the overlay uses — for both
 framings — so no coordinate is ever copied by hand. The build refuses to continue if
 the rectangle falls outside the artwork or stops being a tube shape.
+
+## How the desk reaches the window edges
+
+The artwork is centred and is narrower than the window, so on its own the desk would
+stop short of both sides with wall showing past its ends. `tools/pixel_art_scene.py`
+therefore reports the tabletop's structure row by row — `desk.rows` in `pixel.json`,
+a list of `[count, palette key]` — along with how far its underside sits above the
+canvas bottom. `build.mjs` turns that into `--desk-band`, a hard-stop
+`linear-gradient` whose stops are multiples of `--px-scale`, and refuses to build if a
+row uses a palette key that has no CSS token. `.room__desk` paints it full width at the
+bottom of the viewport.
+
+So the band is the same rows the artwork draws, at the same scale, and the two meet with
+no seam. Bottom-aligning the scene is what lets those offsets be measured from the
+bottom of the viewport at all. The band sits above the tube's glow in the stacking
+order, so the glow lights the wall and not the desk — a tinted band beside an untinted
+artwork would show the join.
+
+## Checks
+
+`tools/check_scene.py` measures three things the other suites do not: that the two theme
+variants are identical in geometry (**zero alpha mismatches**, pixel for pixel), that
+the live screen overlay lands on the drawn glass in both framings — sampled from the
+asset's own pixels rather than from a screenshot — and that nothing on the desk, cables
+and tower and mouse and the CSS band included, takes a click meant for the screen.
 
 The previous build asserted that the screen was axis-aligned. That was an assumption
 about one particular asset rather than a real invariant, so it has been replaced: the

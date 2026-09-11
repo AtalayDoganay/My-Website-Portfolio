@@ -21,6 +21,13 @@
   var KEY = 'atalay.theme';
   var THEMES = { dark: 1, light: 1 };
   var root = document.documentElement;
+
+  // This file is render-blocking in the head, so this class is on the element
+  // before the first paint. The opening's fullscreen display is hidden without
+  // it: with no JavaScript there is no introduction to run and the room has to
+  // stand on its own, and with it the room is never painted and then covered.
+  root.classList.add('js');
+
   var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
 
   // If storage is unavailable - private mode, blocked cookies - switching still

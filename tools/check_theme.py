@@ -94,7 +94,8 @@ def main():
         for scheme, expect in (("dark", "#ffffff"), ("light", "#000000")):
             ctx, pg = page_in(b, rep, scheme, {"width": 1280, "height": 800})
             pg.goto(BASE + "/", wait_until="networkidle")
-            pg.wait_for_timeout(600)
+            pg.click("[data-skip]")
+            pg.wait_for_timeout(300)
             d = pg.evaluate(MEASURE)
             rep.note(
                 f"{scheme}: outline colour is {expect}",
@@ -108,7 +109,14 @@ def main():
             for name, w, h in VIEWPORTS:
                 ctx, pg = page_in(b, rep, scheme, {"width": w, "height": h})
                 pg.goto(BASE + "/", wait_until="networkidle")
-                pg.wait_for_timeout(900)
+                # The pixel grid is what matters AT REST. The opening legitimately
+                # holds the camera at a fractional scale, so let it resolve first
+                # rather than measuring the artwork mid-pullback.
+                pg.click("[data-skip]")
+                pg.wait_for_function(
+                    "() => document.querySelector('[data-room]').dataset.state === 'room-ready'",
+                    timeout=8000)
+                pg.wait_for_timeout(200)
                 d = pg.evaluate(MEASURE)
 
                 integer = abs(d["scale"] - round(d["scale"])) < 1e-6
@@ -186,20 +194,26 @@ def main():
         ctx.close()
 
         # --- switching mid-sequence must not disturb the introduction ------
+        # The theme switch stays outside the moving world, so it is reachable
+        # for the whole opening.
         ctx, pg = page_in(b, rep, "dark", {"width": 1280, "height": 800})
         pg.goto(BASE + "/", wait_until="networkidle")
-        pg.wait_for_timeout(900)
-        before = pg.eval_on_selector("[data-line]", "el => el.textContent")
-        pg.click("[data-theme-toggle]")
+        pg.wait_for_function(
+            "() => document.querySelector('[data-room]').dataset.state === 'typing'",
+            timeout=12000)
+        pg.wait_for_timeout(300)
+        line = '.crt__text[data-line="1"]'
+        before = pg.eval_on_selector(line, "el => el.textContent")
+        pg.click(".theme-toggle--room")
         pg.wait_for_timeout(120)
-        after = pg.eval_on_selector("[data-line]", "el => el.textContent")
+        after = pg.eval_on_selector(line, "el => el.textContent")
         rep.note(
             "switching during typing does not restart the line",
             f"{before!r} -> {after!r}",
             ok=len(after) >= len(before) and "Welcome to my website".startswith(after[:21]),
         )
         pg.wait_for_timeout(700)
-        later = pg.eval_on_selector("[data-line]", "el => el.textContent")
+        later = pg.eval_on_selector(line, "el => el.textContent")
         rep.note("and the sequence keeps running", repr(later), ok=len(later) > len(after))
         rep.note(
             "the theme actually changed",
@@ -211,9 +225,12 @@ def main():
         # --- switching on the desktop must not close or leave --------------
         ctx, pg = page_in(b, rep, "dark", {"width": 1280, "height": 800})
         pg.goto(BASE + "/", wait_until="networkidle")
-        pg.wait_for_timeout(500)
-        pg.click("[data-screen]")
-        pg.wait_for_function("() => document.querySelector('[data-room]').dataset.state === 'gone'", timeout=6000)
+        pg.click("[data-skip]")                      # straight to the finished room
+        pg.wait_for_timeout(200)
+        pg.click("[data-go]")
+        pg.wait_for_function(
+            "() => document.querySelector('[data-room]').dataset.state === 'desktop'",
+            timeout=8000)
         pg.wait_for_timeout(500)
         pg.click(".theme-toggle--tray")
         pg.wait_for_timeout(200)
@@ -225,7 +242,7 @@ def main():
         rep.note(
             "switching on the desktop keeps the window and stays put",
             state,
-            ok=state["theme"] == "light" and state["room"] == "gone"
+            ok=state["theme"] == "light" and state["room"] == "desktop"
             and state["windowOpen"] and state["desktopShown"],
         )
         pg.screenshot(path=str(out / "desk-light-switched.png"))

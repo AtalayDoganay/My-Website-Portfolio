@@ -37,6 +37,51 @@
         "examples/static_html_automation.py": "9d533aafb875ee3ab8b8ebf8f5b9003ac8d999da3d09b285cce252e623140064",
         "scripts/with_server.py": "b0dcf4918935b795f4eda9821579b9902119235ff4447f687a30286e7d0925fd"
       }
+    },
+    "gsap-core": {
+      "origin": "https://github.com/greensock/gsap-skills",
+      "upstreamPath": "skills/gsap-core",
+      "sourceRevision": "aed9cfd3277740755f6bfc1155c7aa645403b760",
+      "revisionUrl": "https://github.com/greensock/gsap-skills/tree/aed9cfd3277740755f6bfc1155c7aa645403b760/skills/gsap-core",
+      "license": "MIT",
+      "licenseFile": "../GSAP-SKILLS-LICENSE.txt",
+      "copyright": "Copyright (c) 2026 GreenSock",
+      "installedAt": "2026-09-11T00:00:00Z",
+      "installedPath": ".claude/skills/gsap-core",
+      "modified": false,
+      "files": {
+        "SKILL.md": "de938eefd9a5bc6335216a17783788cd21408923ead290cda5871b7d61db66b8"
+      }
+    },
+    "gsap-timeline": {
+      "origin": "https://github.com/greensock/gsap-skills",
+      "upstreamPath": "skills/gsap-timeline",
+      "sourceRevision": "aed9cfd3277740755f6bfc1155c7aa645403b760",
+      "revisionUrl": "https://github.com/greensock/gsap-skills/tree/aed9cfd3277740755f6bfc1155c7aa645403b760/skills/gsap-timeline",
+      "license": "MIT",
+      "licenseFile": "../GSAP-SKILLS-LICENSE.txt",
+      "copyright": "Copyright (c) 2026 GreenSock",
+      "installedAt": "2026-09-11T00:00:00Z",
+      "installedPath": ".claude/skills/gsap-timeline",
+      "modified": false,
+      "files": {
+        "SKILL.md": "fbe7a2b9e66e66d2c956f650583d48385498b677ba1292f1dce9d1ffb1a77ea0"
+      }
+    },
+    "gsap-performance": {
+      "origin": "https://github.com/greensock/gsap-skills",
+      "upstreamPath": "skills/gsap-performance",
+      "sourceRevision": "aed9cfd3277740755f6bfc1155c7aa645403b760",
+      "revisionUrl": "https://github.com/greensock/gsap-skills/tree/aed9cfd3277740755f6bfc1155c7aa645403b760/skills/gsap-performance",
+      "license": "MIT",
+      "licenseFile": "../GSAP-SKILLS-LICENSE.txt",
+      "copyright": "Copyright (c) 2026 GreenSock",
+      "installedAt": "2026-09-11T00:00:00Z",
+      "installedPath": ".claude/skills/gsap-performance",
+      "modified": false,
+      "files": {
+        "SKILL.md": "2dd51f19a7fcabe1c06caee9e61554485696d05003396c528237aba970a959ce"
+      }
     }
   }
 }

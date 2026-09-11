@@ -19,6 +19,7 @@ import binascii
 import json
 import os
 import struct
+import sys
 import zlib
 
 # ---------------------------------------------------------------- PNG output
@@ -174,229 +175,66 @@ class Canvas:
 
 DARK = {
     "outline": "#FFFFFF",
-    "case_top": "#7C88B8",     # the lit top face
-    "case_front": "#59648F",   # the face turned toward us
-    "case_side": "#3D4670",    # the left side, turned away
-    "case_deep": "#2B3054",    # under-shadow and recesses
-    "case_edge": "#96A2CE",    # bevel catch-light
+    # Beige plastic, lit from the upper left. The lit planes are warm; the
+    # shadowed ones cool, because what fills them is the navy room. That is what
+    # keeps the equipment reading as its own material against a lavender desk.
+    "case_top": "#A39C86",     # the lit top face
+    "case_front": "#7A7568",   # the face turned toward us
+    "case_side": "#565561",    # the left side, turned away
+    "case_deep": "#3A3B4C",    # under-shadow and recesses
+    "case_edge": "#C4BEA8",    # bevel catch-light
     "glass": "#10173A",
     "glass_lit": "#1C2A5E",
     "cyan": "#7FE3F5",
     "violet": "#B49BF0",
     "led": "#7FF5C4",
     "shadow": "#151936",
-    "key_top": "#69749E",
-    "key_side": "#454E79",
+    "key_top": "#8E8878",
+    "key_side": "#625F57",
+    # The desk is a different material from the machines. It has to be: the
+    # tabletop and a machine's lit top face would otherwise be the same value,
+    # and anything lying flat on the desk - the mouse, the keycaps - would
+    # vanish into it with only its outline left.
+    "desk_top": "#4A4A7A",
+    "desk_front": "#34355E",
+    "desk_side": "#2E2F52",
+    "desk_edge": "#6A66A0",
+    "desk_cast": "#3B3B63",   # the longer shadow, lighter than the occlusion one
 }
 
 LIGHT = {
     "outline": "#000000",
-    "case_top": "#F2F6FC",
-    "case_front": "#D3DEF0",
-    "case_side": "#B3C2DE",
-    "case_deep": "#93A3C4",
-    "case_edge": "#FFFFFF",
+    "case_top": "#F0ECE0",
+    "case_front": "#D9D3C3",
+    "case_side": "#B5AF9F",
+    "case_deep": "#8D897C",
+    "case_edge": "#FFFEF8",
     "glass": "#C9D8EC",
     "glass_lit": "#E6EFFA",
     "cyan": "#5FB6C8",
     "violet": "#9E86D4",
     "led": "#3FA98A",
     "shadow": "#A9B6CE",
-    "key_top": "#E4EBF6",
-    "key_side": "#BFCCE2",
+    "key_top": "#E8E3D4",
+    "key_side": "#B8B2A1",
+    "desk_top": "#C3BBE0",
+    "desk_front": "#A197C6",
+    "desk_side": "#8177A8",
+    "desk_edge": "#E9E5F7",
+    "desk_cast": "#A79ECB",
 }
 
-# ------------------------------------------------------- the machine geometry
-# One oblique projection, depth running back and to the LEFT. That is what turns
-# the monitor to face slightly right: we see its left side casing, while the front
-# face - and so the screen - stays a true rectangle on the grid. Keeping the screen
-# axis-aligned is what lets the live text sit on the pixel grid without resampling.
+# --------------------------------------------------------------------- scene
+# This file owns the PNG encoder, the canvas and the palettes; pixel_art_scene.py
+# owns the picture. Splitting them keeps the geometry readable - it is the part
+# that gets edited - without burying it under the plumbing.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pixel_art_scene as scene                                   # noqa: E402
 
-W, H = 216, 150
-
-FRONT_X, FRONT_Y = 74, 22          # monitor front face
-FRONT_W, FRONT_H = 84, 74
-DEPTH_X, DEPTH_Y = 22, 11          # the 2:1 oblique step
-
-SCREEN_X, SCREEN_Y = 82, 29        # the glass, 4:3 on the grid
-SCREEN_W, SCREEN_H = 68, 51
-
-
-def draw_machine(c):
-    o = "outline"
-    fx, fy, fw, fh = FRONT_X, FRONT_Y, FRONT_W, FRONT_H
-    dx, dy = DEPTH_X, DEPTH_Y
-
-    # ---- cast shadow on the desk, a flat stepped ellipse ------------------
-    for half, yy in ((30, 113), (34, 114), (31, 115)):
-        c.hline(116 - half, 116 + half, yy, "shadow")
-    for half, yy in ((62, 142), (66, 143), (63, 144)):
-        c.hline(116 - half, 116 + half, yy, "shadow")
-
-    # ---- monitor: left side face -----------------------------------------
-    side = [(fx, fy), (fx - dx, fy - dy), (fx - dx, fy + fh - dy), (fx, fy + fh)]
-    c.poly(side, "case_side")
-    # vent slots, stepped along the oblique so they sit on the side plane
-    for i in range(6):
-        sy = fy + 16 + i * 7
-        c.line(fx - 4, sy, fx - dx + 3, sy - (dy - 6), "case_deep")
-
-    # ---- monitor: top face ------------------------------------------------
-    top = [(fx, fy), (fx + fw, fy), (fx + fw - dx, fy - dy), (fx - dx, fy - dy)]
-    c.poly(top, "case_top")
-
-    # ---- monitor: front face ---------------------------------------------
-    c.rect(fx, fy, fw, fh, "case_front")
-    # bevel catch-light along the top and left of the front moulding
-    c.hline(fx + 1, fx + fw - 2, fy + 1, "case_edge")
-    c.vline(fx + 1, fy + 1, fy + fh - 2, "case_edge")
-    # moulded seam where the front shell meets the back
-    c.vline(fx + 3, fy + 3, fy + fh - 3, "case_deep")
-
-    # ---- the tube ---------------------------------------------------------
-    sx, sy, sw, sh = SCREEN_X, SCREEN_Y, SCREEN_W, SCREEN_H
-    c.rect(sx - 2, sy - 2, sw + 4, sh + 4, "case_deep")     # recess
-    c.rect(sx, sy, sw, sh, "glass")
-    # the tube is brighter toward the middle; two steps, no gradient
-    c.rect(sx + 6, sy + 5, sw - 12, sh - 10, "glass_lit")
-    # only where the two tones meet, so the tube does not read as a dotted field
-    c.dither(sx + 3, sy + 3, sw - 6, 3, "glass_lit", density=6)
-    c.dither(sx + 3, sy + sh - 6, sw - 6, 3, "glass_lit", density=6)
-    c.frame(sx - 1, sy - 1, sw + 2, sh + 2, o)
-
-    # ---- chin: controls ---------------------------------------------------
-    chin_y = sy + sh + 7
-    c.frame(fx + 6, chin_y, 7, 7, o)                 # power switch
-    c.rect(fx + 7, chin_y + 1, 5, 5, "case_top")
-    c.set(fx + 9, chin_y + 2, o)
-    c.set(fx + 9, chin_y + 3, o)
-    c.rect(fx + 17, chin_y + 2, 3, 3, "led")         # power indicator
-    for i in range(4):                                # adjustment buttons
-        c.rect(fx + 46 + i * 8, chin_y + 2, 5, 3, "case_deep")
-    c.hline(fx + 6, fx + 30, chin_y - 5, "case_deep")  # moulded strip
-
-    # ---- monitor silhouette ----------------------------------------------
-    c.outline_poly(top, o)
-    c.outline_poly(side, o)
-    c.frame(fx, fy, fw, fh, o)
-
-    # ---- stand ------------------------------------------------------------
-    neck = [(104, fy + fh), (128, fy + fh), (128, fy + fh + 9), (104, fy + fh + 9)]
-    c.poly(neck, "case_front")
-    c.vline(105, fy + fh, fy + fh + 8, "case_edge")
-    c.outline_poly(neck, o)
-
-    base_front = [(92, 105), (140, 105), (140, 112), (92, 112)]
-    base_top = [(92, 105), (140, 105), (140 - 10, 100), (92 - 10, 100)]
-    c.poly(base_top, "case_top")
-    c.poly(base_front, "case_front")
-    c.outline_poly(base_top, o)
-    c.outline_poly(base_front, o)
-
-    # ---- keyboard ---------------------------------------------------------
-    kb_fl, kb_fr, kb_y = 52, 180, 138
-    kdx, kdy = 34, 17
-    deck = [(kb_fl, kb_y), (kb_fr, kb_y), (kb_fr - kdx, kb_y - kdy), (kb_fl - kdx, kb_y - kdy)]
-    lip = [(kb_fl, kb_y), (kb_fr, kb_y), (kb_fr, kb_y + 6), (kb_fl, kb_y + 6)]
-    c.poly(lip, "case_side")
-    c.poly(deck, "case_front")
-
-    # Keycaps: five rows following the deck's own slope, so every row lands on it.
-    # step_y is the deck depth divided by the rows, step_x the matching oblique run.
-    n_rows = 5
-    step_y = kdy / (n_rows + 0.6)
-    step_x = kdx / (n_rows + 0.6)
-    rows = [(7, 1.6), (13, 1.0), (14, 1.0), (15, 1.0), (16, 1.0)]   # front to back
-    for r, (count, kw_mul) in enumerate(rows):
-        ry = int(kb_y - 3 - r * step_y)
-        rx = int(kb_fl + 6 - r * step_x)
-        right = int(kb_fr - 6 - r * step_x)
-        span = right - rx
-        pitch = span / count
-        kw = max(3, int(pitch / kw_mul) - 1)
-        for k in range(count):
-            kx = rx + int(k * pitch)
-            if kx + kw > right:
-                continue
-            c.rect(kx, ry - 2, kw, 2, "case_top")
-            c.hline(kx, kx + kw - 1, ry, "case_deep")
-
-    c.outline_poly(deck, o)
-    c.outline_poly(lip, o)
-    return {
-        "screen": {"x": sx, "y": sy, "w": sw, "h": sh},
-        "canvas": {"w": W, "h": H},
-    }
-
-
-# ------------------------------------------------ the compact composition
-# A 216-wide picture on a 390-wide phone can only be shown at 1x before it runs
-# off the screen, which leaves the tube far too small to read. So narrow screens
-# get their own framing rather than a shrunken copy of this one: the monitor
-# alone, drawn larger on a smaller canvas, at the same scale on the same grid.
-
-CW, CH = 120, 126
-C_FX, C_FY, C_FW, C_FH = 20, 10, 88, 78
-C_DX, C_DY = 16, 8
-C_SX, C_SY, C_SW, C_SH = 28, 17, 72, 54
-
-
-def draw_machine_compact(c):
-    o = "outline"
-    fx, fy, fw, fh = C_FX, C_FY, C_FW, C_FH
-    dx, dy = C_DX, C_DY
-
-    for half, yy in ((26, 106), (29, 107), (27, 108)):
-        c.hline(64 - half, 64 + half, yy, "shadow")
-
-    side = [(fx, fy), (fx - dx, fy - dy), (fx - dx, fy + fh - dy), (fx, fy + fh)]
-    c.poly(side, "case_side")
-    for i in range(5):
-        sy = fy + 16 + i * 9
-        c.line(fx - 3, sy, fx - dx + 2, sy - (dy - 5), "case_deep")
-
-    top = [(fx, fy), (fx + fw, fy), (fx + fw - dx, fy - dy), (fx - dx, fy - dy)]
-    c.poly(top, "case_top")
-
-    c.rect(fx, fy, fw, fh, "case_front")
-    c.hline(fx + 1, fx + fw - 2, fy + 1, "case_edge")
-    c.vline(fx + 1, fy + 1, fy + fh - 2, "case_edge")
-    c.vline(fx + 3, fy + 3, fy + fh - 3, "case_deep")
-
-    sx, sy, sw, sh = C_SX, C_SY, C_SW, C_SH
-    c.rect(sx - 2, sy - 2, sw + 4, sh + 4, "case_deep")
-    c.rect(sx, sy, sw, sh, "glass")
-    c.rect(sx + 6, sy + 5, sw - 12, sh - 10, "glass_lit")
-    c.dither(sx + 3, sy + 3, sw - 6, 3, "glass_lit", density=6)
-    c.dither(sx + 3, sy + sh - 6, sw - 6, 3, "glass_lit", density=6)
-    c.frame(sx - 1, sy - 1, sw + 2, sh + 2, o)
-
-    chin_y = sy + sh + 6
-    c.frame(fx + 6, chin_y, 7, 7, o)
-    c.rect(fx + 7, chin_y + 1, 5, 5, "case_top")
-    c.set(fx + 9, chin_y + 2, o)
-    c.set(fx + 9, chin_y + 3, o)
-    c.rect(fx + 17, chin_y + 2, 3, 3, "led")
-    for i in range(4):
-        c.rect(fx + 48 + i * 8, chin_y + 2, 5, 3, "case_deep")
-
-    c.outline_poly(top, o)
-    c.outline_poly(side, o)
-    c.frame(fx, fy, fw, fh, o)
-
-    neck = [(52, fy + fh), (76, fy + fh), (76, fy + fh + 8), (52, fy + fh + 8)]
-    c.poly(neck, "case_front")
-    c.vline(53, fy + fh, fy + fh + 7, "case_edge")
-    c.outline_poly(neck, o)
-
-    base_front = [(44, 96), (84, 96), (84, 103), (44, 103)]
-    base_top = [(44, 96), (84, 96), (84 - 8, 92), (44 - 8, 92)]
-    c.poly(base_top, "case_top")
-    c.poly(base_front, "case_front")
-    c.outline_poly(base_top, o)
-    c.outline_poly(base_front, o)
-
-    return {"screen": {"x": sx, "y": sy, "w": sw, "h": sh}, "canvas": {"w": CW, "h": CH}}
+W, H = scene.W, scene.H
+CW, CH = scene.CW, scene.CH
+draw_machine = scene.draw_scene
+draw_machine_compact = scene.draw_scene_compact
 
 
 # ------------------------------------------------------------- the wallpaper
@@ -492,6 +330,7 @@ def main():
                 "left": s["x"] / W, "top": s["y"] / H,
                 "width": s["w"] / W, "height": s["h"] / H,
             },
+            "desk": machine_meta["desk"],
             "bytes": machine_sizes,
         },
         "machineCompact": {
@@ -503,6 +342,7 @@ def main():
                 "width": compact_meta["screen"]["w"] / CW,
                 "height": compact_meta["screen"]["h"] / CH,
             },
+            "desk": compact_meta["desk"],
             "bytes": compact_sizes,
         },
         "wallpaper": {"canvas": [WALL_W, WALL_H], "bytes": wall_sizes},

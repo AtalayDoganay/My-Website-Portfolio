@@ -3,46 +3,104 @@
   "note": "Drawn on an integer grid from a fixed palette. Not a downscaled render.",
   "machine": {
     "canvas": [
-      216,
-      150
+      340,
+      180
     ],
     "screen": {
-      "x": 82,
-      "y": 29,
-      "w": 68,
-      "h": 51
+      "x": 66,
+      "y": 21,
+      "w": 72,
+      "h": 54
     },
     "screenFraction": {
-      "left": 0.37962962962962965,
-      "top": 0.19333333333333333,
-      "width": 0.3148148148148148,
-      "height": 0.34
+      "left": 0.19411764705882353,
+      "top": 0.11666666666666667,
+      "width": 0.21176470588235294,
+      "height": 0.3
+    },
+    "desk": {
+      "fromBottom": 28,
+      "rows": [
+        [
+          1,
+          "outline"
+        ],
+        [
+          41,
+          "desk_top"
+        ],
+        [
+          1,
+          "outline"
+        ],
+        [
+          1,
+          "desk_edge"
+        ],
+        [
+          7,
+          "desk_front"
+        ],
+        [
+          1,
+          "outline"
+        ]
+      ]
     },
     "bytes": {
-      "dark": 1021,
-      "light": 1016
+      "dark": 2185,
+      "light": 2203
     }
   },
   "machineCompact": {
     "canvas": [
       120,
-      126
+      168
     ],
     "screen": {
-      "x": 28,
-      "y": 17,
-      "w": 72,
-      "h": 54
+      "x": 20,
+      "y": 15,
+      "w": 64,
+      "h": 48
     },
     "screenFraction": {
-      "left": 0.23333333333333334,
-      "top": 0.1349206349206349,
-      "width": 0.6,
-      "height": 0.42857142857142855
+      "left": 0.16666666666666666,
+      "top": 0.08928571428571429,
+      "width": 0.5333333333333333,
+      "height": 0.2857142857142857
+    },
+    "desk": {
+      "fromBottom": 33,
+      "rows": [
+        [
+          1,
+          "outline"
+        ],
+        [
+          37,
+          "desk_top"
+        ],
+        [
+          1,
+          "outline"
+        ],
+        [
+          1,
+          "desk_edge"
+        ],
+        [
+          4,
+          "desk_front"
+        ],
+        [
+          1,
+          "outline"
+        ]
+      ]
     },
     "bytes": {
-      "dark": 605,
-      "light": 594
+      "dark": 1424,
+      "light": 1438
     }
   },
   "wallpaper": {
@@ -51,8 +109,8 @@
       150
     ],
     "bytes": {
-      "dark": 1087,
-      "light": 1086
+      "dark": 1083,
+      "light": 1094
     }
   }
 }

@@ -1,13 +1,26 @@
 /* ===========================================================================
    The opening scene.
 
-   The machine is pixel art drawn at 216x150 and scaled by a WHOLE NUMBER, so
-   every source pixel lands on an exact block of device pixels and nothing
+   The desk is pixel art drawn at 340x180 and scaled by a WHOLE NUMBER at rest,
+   so every source pixel lands on an exact block of device pixels and nothing
    shimmers when the composition resizes. The scale is chosen by the page
    script; the value in tokens.css is the fallback before it runs.
 
-   The room around it is CSS only - flat bands with hard stops and a
-   checkerboard dither - so it stays crisp at any viewport with no extra asset.
+   ONE SCENE, ONE CAMERA. `.room__world` holds everything physical - wall,
+   grain, the tube's glow, the tabletop band that continues the desk past the
+   artwork, and the machine itself - and it is the only thing that moves. The
+   opening starts with the camera pushed in on the glass and pulls back; the
+   click pushes it in again. Because there is exactly one transform, the whole
+   setup necessarily changes size together, and objects outside the first frame
+   arrive as the camera retreats. The camera is fractional while it moves and
+   lands on exactly scale 1, which is where the integer pixel grid matters.
+
+   The introduction, the button, the hand and the burst all live inside
+   `.crt__glass`, which clips them. They are part of the physical screen, not
+   decoration floating over the machine.
+
+   Skip, sound and the theme switch are siblings of the world, never children,
+   so the camera does not carry them.
    ========================================================================= */
 
 .room {
@@ -21,11 +34,12 @@
   isolation: isolate;
 }
 
-/* Everything that flies past you on the way in. */
+/* The camera target. The page script writes `transform` here and nowhere else;
+   transform-origin is the top-left so the pose is a plain translate + scale. */
 .room__world {
   position: absolute;
   inset: 0;
-  will-change: transform;
+  transform-origin: 0 0;
 }
 
 /* ----------------------------------------------------------- environment */
@@ -33,61 +47,54 @@
 .room__env { position: absolute; inset: 0; }
 .room__env > span { position: absolute; display: block; }
 
-/* Hard stops, never a blend: this sky is banded on purpose. */
-.room__sky {
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    var(--bg) 0 34%,
-    var(--bg-2) 34% 56%,
-    var(--surface-1) 56% 78%,
-    var(--surface-2) 78% 100%
-  );
-}
+.room__wall { inset: 0; background: var(--bg); }
 
-/* 2x2 checkerboards at 4px: the dither that breaks each band edge. */
-.room__stars {
-  inset: 0 0 22% 0;
-  background:
-    repeating-conic-gradient(var(--bg-2) 0% 25%, transparent 0% 50%) 0 34% / 4px 4px,
-    repeating-conic-gradient(var(--surface-1) 0% 25%, transparent 0% 50%) 0 56% / 4px 4px;
-  background-repeat: repeat-x;
+/* A 2x2 checkerboard whose cell is ONE artwork pixel, so the wall is drawn on
+   the same grid as the desk rather than at a second, finer resolution. */
+.room__grain {
+  inset: -100%;
+  background: repeating-conic-gradient(var(--bg-2) 0% 25%, transparent 0% 50%)
+    0 0 / calc(var(--px-scale) * 2px) calc(var(--px-scale) * 2px);
   opacity: 0.7;
 }
 
-.room__ridge {
-  inset-inline: 0;
-  bottom: 44%;
-  height: 0;
-  border-top: var(--edge) solid var(--outline);
-  opacity: 0.45;
+/* The tabletop, continued out to both window edges. The artwork is centred and
+   narrower than the window, so without this the desk would stop short of the
+   sides with wall showing past its ends. Every number comes from the generated
+   block at the end of this file, which reads them off the asset - so the rows
+   here are the same rows the artwork draws, at the same scale, and the two meet
+   with no seam. It is inside the world, so the camera carries it too.
+
+   It sits above the glow so the tube lights the wall and not the desk: a tinted
+   band beside an untinted artwork would show the join. */
+.room__desk {
+  left: -100vw;
+  right: -100vw;
+  bottom: calc(var(--desk-band-bottom) * var(--px-scale) * 1px);
+  height: calc(var(--desk-band-height) * var(--px-scale) * 1px);
+  background: var(--desk-band);
 }
 
-.room__floor {
-  inset: 78% 0 0 0;
-  background: var(--surface-2);
-  border-top: var(--edge) solid var(--outline);
-}
-
-/* The only glow in the scene, thrown by the tube onto the floor in front. */
+/* The only glow in the scene, thrown by the tube onto the wall behind it. */
 .room__glow {
-  inset: 44% 0 0 0;
+  inset: 0;
   background: radial-gradient(
-    30% 40% at 50% 34%,
-    color-mix(in srgb, var(--cyan) 22%, transparent) 0%,
+    42% 38% at 30% 62%,
+    color-mix(in srgb, var(--cyan) 18%, transparent) 0%,
     transparent 70%
   );
+  transition: opacity 260ms var(--ease-smooth);
 }
 
 /* ----------------------------------------------------------- the machine */
 
+/* Bottom-aligned, so the desk legs run off the bottom edge of the viewport
+   instead of ending in mid-air above a painted band. */
 .room__stage {
   position: absolute;
   inset: 0;
   display: grid;
-  place-items: center;
-  /* the composition sits a little above the optical centre */
-  padding-bottom: 10vh;
+  place-items: end center;
 }
 
 .crt {
@@ -106,7 +113,8 @@
 :root[data-theme='light'] .crt__art--wide.crt__art--dark { display: none; }
 :root[data-theme='light'] .crt__art--wide.crt__art--light { display: block; }
 
-@media (max-width: 34rem), (max-height: 26rem) {
+@media (max-width: 34rem), (max-height: 26rem) and (max-width: 44rem),
+       (orientation: portrait) and (max-width: 48rem) {
   .crt__art--wide { display: none !important; }
   .crt__art--narrow.crt__art--dark { display: block; }
   :root[data-theme='light'] .crt__art--narrow.crt__art--dark { display: none; }
@@ -115,7 +123,9 @@
 
 /* ------------------------------------------------------------- the screen
    Positioned from the fractions tools/pixel_art.py measured on the grid and
-   build.mjs emitted at the end of this stylesheet. */
+   build.mjs emitted at the end of this stylesheet. It is a plain container, not
+   a control: the button inside it is the interactive element, and a button
+   inside a button is neither valid nor operable. */
 
 .crt__screen {
   position: absolute;
@@ -124,15 +134,10 @@
   width: var(--screen-width);
   height: var(--screen-height);
   container-type: inline-size;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 
+/* overflow: hidden is what keeps the introduction, the button, the hand and the
+   burst INSIDE the glass, at every frame of the camera move as well as at rest. */
 .crt__glass {
   position: absolute;
   inset: 0;
@@ -147,59 +152,71 @@
   right: 4cqi;
   top: 50%;
   transform: translateY(-50%);
-  display: flex;
-  align-items: baseline;
-  min-height: 2.2em;
   font-family: var(--face-crt);
   font-size: 6.2cqi;
-  line-height: 1.2;
+  line-height: 1.25;
   color: var(--cyan);
   text-align: left;
   white-space: pre;
+  transition: opacity 320ms var(--ease-smooth);
 }
 :root[data-theme='light'] .crt__readout { color: var(--ink); }
 
-.crt__line { white-space: pre; }
+/* The introduction is spoken once, during the opening. It clears as the camera
+   pulls back and the button takes its place. */
+.room[data-lines='off'] .crt__readout { opacity: 0; }
 
+.crt__rows { position: relative; display: block; }
+.crt__row { display: block; min-height: 1.25em; }
+.crt__text { white-space: pre; }
+
+/* A modest block cursor: one character cell, blinking only while it waits. */
 .crt__caret {
-  display: inline-block;
-  width: 0.52em;
-  height: 0.9em;
+  display: none;
+  width: 0.5em;
+  height: 0.88em;
   margin-left: 0.08em;
   background: currentColor;
   translate: 0 0.08em;
+  opacity: 0.9;
+}
+.crt__caret.is-on {
+  display: inline-block;
   animation: caret 1.06s steps(1, end) infinite;
 }
+.crt__caret.is-steady { animation: none; opacity: 0.9; }
+
 @keyframes caret {
-  0%, 55% { opacity: 1; }
+  0%, 55% { opacity: 0.9; }
   56%, 100% { opacity: 0; }
 }
-.room[data-typing='running'] .crt__caret { animation: none; opacity: 1; }
 
-.crt__hint {
-  position: absolute;
-  left: 6cqi;
-  right: 4cqi;
-  bottom: 6cqi;
-  font-family: var(--face-crt);
-  font-size: 5cqi;
-  color: var(--cyan);
-  opacity: 0;
-  transition: opacity var(--tap) var(--ease);
-}
-:root[data-theme='light'] .crt__hint { color: var(--ink); }
-.room[data-invite='on'] .crt__hint { opacity: 0.92; }
-
-/* Scanlines at two device pixels, so they belong to the same grid. */
+/* Subtle screen texture: scanlines on the artwork's own grid, and a faint
+   phosphor bloom toward the centre. */
 .crt__scan {
   position: absolute;
   inset: 0;
   background: repeating-linear-gradient(
     180deg,
-    color-mix(in srgb, var(--bg) 45%, transparent) 0 2px,
-    transparent 2px 4px
+    color-mix(in srgb, var(--bg) 42%, transparent) 0 1px,
+    transparent 1px 3px
   );
+  background-size: auto calc(var(--px-scale) * 1.5px);
+  pointer-events: none;
+  z-index: 4;
 }
+.crt__bloom {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    70% 60% at 50% 46%,
+    color-mix(in srgb, var(--cyan) 9%, transparent) 0%,
+    transparent 76%
+  );
+  pointer-events: none;
+  z-index: 4;
+}
+:root[data-theme='light'] .crt__bloom { opacity: 0.5; }
 
 /* The wallpaper waiting behind the text: what you fly into. */
 .crt__wall {
@@ -212,12 +229,286 @@
 
 /* --- lit state --------------------------------------------------------- */
 
-.crt__screen:is(:hover, :focus-visible) .crt__glass,
+.crt:has(.crt__go:is(:hover, :focus-visible)) .crt__glass,
 .room[data-hot='on'] .crt__glass { background: var(--glass-lit); }
 
-.crt__screen:focus-visible { outline-offset: var(--edge); }
+/* ======================================================== the invitation
+   A raised button, a gloved hand demonstrating it, and a burst that launches
+   from the button's own top edge. Everything is sized in container units of the
+   glass, so it keeps its proportions and its travel stays on screen at every
+   framing.
 
-/* ---------------------------------------------------------- theme switch */
+   One 2000ms cycle with named phases, in order:
+
+     0-14%   anticipation - the hand lifts
+     14-32%  the dip toward the button
+     32-36%  contact - the button goes down, the burst launches
+     36-68%  the burst arcs outward and fades, then nothing
+     50-68%  the button releases and the hand lifts away
+     68-100% rest, the quiet pause before it repeats
+
+   Nothing here costs a timer and nothing accumulates. None of it takes input:
+   the layer is inert and only the button is interactive. */
+
+.invite {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 240ms var(--ease-smooth);
+  z-index: 2;
+}
+.room:is([data-invite='on'], [data-invite='fire']) .invite { opacity: 1; }
+
+.px-sprite { display: block; width: 100%; height: auto; }
+.px-sprite__ink { fill: var(--outline); }
+.px-sprite__fill { fill: var(--hand); }
+.px-sprite__cuff { fill: var(--violet); }
+.px-sprite__dim { fill: var(--hand-dim); }
+.px-sprite__hi { fill: var(--hand-hi); }
+
+/* ---- the button -------------------------------------------------------- */
+/* Horizontally centred, centred on 65% of the glass height. A top face on a
+   lower edge, so pressing it visibly travels down onto its own base. */
+
+.crt__go {
+  --u: 1cqi;
+  --btn-w: 46cqi;
+  --btn-h: 20cqi;
+  --drop: calc(var(--u) * 3);
+
+  position: absolute;
+  left: 50%;
+  top: 65%;
+  translate: -50% -50%;
+  z-index: 3;
+  width: var(--btn-w);
+  height: var(--btn-h);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.crt__go[hidden] { display: none; }
+
+.crt__go-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: var(--u) solid var(--outline);
+  background: var(--gold);
+  box-shadow:
+    0 var(--drop) 0 0 var(--btn-edge),
+    0 var(--drop) 0 var(--u) var(--outline);
+}
+.crt__go-label {
+  font-family: var(--face-ui);
+  font-size: calc(var(--u) * 8);
+  line-height: 1;
+  color: var(--bg);
+  letter-spacing: 0.04em;
+}
+
+/* Pressed: the top face travels down onto its base and the base shortens by the
+   same amount, so the key stays put and only its face moves. */
+.crt__go[data-pressed] .crt__go-face {
+  translate: 0 calc(var(--u) * 2);
+  box-shadow:
+    0 var(--u) 0 0 var(--btn-edge),
+    0 var(--u) 0 var(--u) var(--outline);
+}
+.crt__go:focus-visible {
+  outline: var(--u) solid var(--cyan);
+  outline-offset: var(--u);
+}
+
+.room[data-invite='on'] .crt__go-face {
+  animation: btn-press 2000ms linear infinite;
+}
+.room[data-invite='fire'] .crt__go-face {
+  animation: btn-fire 520ms steps(2, end) 1 both;
+}
+@keyframes btn-press {
+  0%, 31% {
+    translate: 0 0;
+    box-shadow: 0 var(--drop) 0 0 var(--btn-edge), 0 var(--drop) 0 var(--u) var(--outline);
+  }
+  33%, 50% {
+    translate: 0 calc(var(--u) * 2);
+    box-shadow: 0 var(--u) 0 0 var(--btn-edge), 0 var(--u) 0 var(--u) var(--outline);
+  }
+  56%, 100% {
+    translate: 0 0;
+    box-shadow: 0 var(--drop) 0 0 var(--btn-edge), 0 var(--drop) 0 var(--u) var(--outline);
+  }
+}
+@keyframes btn-fire {
+  0%, 60% {
+    translate: 0 calc(var(--u) * 2);
+    box-shadow: 0 var(--u) 0 0 var(--btn-edge), 0 var(--u) 0 var(--u) var(--outline);
+  }
+  61%, 100% {
+    translate: 0 0;
+    box-shadow: 0 var(--drop) 0 0 var(--btn-edge), 0 var(--drop) 0 var(--u) var(--outline);
+  }
+}
+
+/* ---- the hand ---------------------------------------------------------- */
+/* Above and slightly right of the button, index finger pointing down-left. The
+   dip is tuned so the fingertip - about 21% across and 97% down the sprite -
+   lands ON the button's top face; tools/check_room.py measures that contact
+   from the two live rects rather than trusting these numbers. */
+
+.invite__hand {
+  position: absolute;
+  left: calc(50% + 10cqi);
+  top: calc(65% - 40cqi);
+  width: 17cqi;
+}
+.room[data-invite='on'] .invite__hand {
+  animation: invite-hand 2000ms linear infinite;
+}
+.room[data-invite='fire'] .invite__hand {
+  animation: hand-fire 520ms linear 1 both;
+}
+@keyframes invite-hand {
+  0%   { transform: translate(0, 0); animation-timing-function: cubic-bezier(0.3, 0, 0.6, 1); }
+  14%  { transform: translate(6%, -22%); animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.55); }
+  32%  { transform: translate(-24%, 46%); animation-timing-function: cubic-bezier(0.2, 1.2, 0.4, 1); }
+  36%  { transform: translate(-22%, 42%); }
+  50%  { transform: translate(-22%, 42%); animation-timing-function: cubic-bezier(0.35, 0, 0.3, 1); }
+  68%  { transform: translate(0, 0); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes hand-fire {
+  0%, 60% { transform: translate(-22%, 42%); }
+  100%    { transform: translate(0, 0); }
+}
+
+/* ---- the burst --------------------------------------------------------- */
+/* Launched from the button's top edge, arcing outward and up. Travel is in
+   container units of the glass, so it scales with the screen instead of being
+   clipped the moment it leaves. Nine pieces, fixed: three exclamation marks,
+   two question marks, four stars. */
+
+.burst {
+  position: absolute;
+  left: 50%;
+  top: calc(65% - 10cqi);
+  width: 0;
+  height: 0;
+  z-index: 3;
+}
+.burst__bit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  font-style: normal;
+}
+.burst__star {
+  width: 2.2cqi;
+  height: 2.2cqi;
+  background: currentColor;
+  box-shadow:
+    2.2cqi 0 0 currentColor, -2.2cqi 0 0 currentColor,
+    0 2.2cqi 0 currentColor, 0 -2.2cqi 0 currentColor;
+}
+.burst__mark {
+  font-family: var(--face-ui);
+  font-size: 11cqi;
+  line-height: 1;
+  translate: -50% -50%;
+  text-shadow:
+    0.9cqi 0 0 var(--outline), -0.9cqi 0 0 var(--outline),
+    0 0.9cqi 0 var(--outline), 0 -0.9cqi 0 var(--outline),
+    0.9cqi 0.9cqi 0 var(--outline), -0.9cqi 0.9cqi 0 var(--outline),
+    0.9cqi -0.9cqi 0 var(--outline), -0.9cqi -0.9cqi 0 var(--outline);
+}
+
+.burst__bit--1 { --dx: -20; --dy: -24; --spin: -18deg; color: var(--coral); }
+.burst__bit--2 { --dx: 15;  --dy: -25; --spin: 16deg;  color: var(--coral); }
+.burst__bit--3 { --dx: 2;   --dy: -29; --spin: -8deg;  color: var(--coral); }
+.burst__bit--4 { --dx: -29; --dy: -12; --spin: -22deg; color: var(--pink); }
+.burst__bit--5 { --dx: 26;  --dy: -14; --spin: 20deg;  color: var(--gold); }
+.burst__bit--6 { --dx: -12; --dy: -28; --spin: 0deg;   color: var(--cyan); }
+.burst__bit--7 { --dx: 8;   --dy: -29; --spin: 0deg;   color: var(--mint); }
+.burst__bit--8 { --dx: 33;  --dy: -3;  --spin: 0deg;   color: var(--cyan); }
+.burst__bit--9 { --dx: -34; --dy: -1;  --spin: 0deg;   color: var(--mint); }
+
+.room[data-invite='on'] .burst__bit {
+  animation: burst 2000ms steps(4, end) infinite;
+}
+.room[data-invite='fire'] .burst__bit {
+  animation: burst-fire 760ms steps(4, end) 1 both;
+}
+
+/* Out in a small arc - up first, then along - then a visible fade. */
+@keyframes burst {
+  0%, 31% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+  36% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * 0.35cqi), calc(var(--dy) * 0.55cqi))
+               scale(1.1) rotate(calc(var(--spin) * 0.4));
+  }
+  48% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * 0.8cqi), calc(var(--dy) * 1cqi))
+               scale(1) rotate(var(--spin));
+  }
+  58% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * 1cqi), calc(var(--dy) * 1.05cqi))
+               scale(0.95) rotate(var(--spin));
+  }
+  68%, 100% {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * 1.12cqi), calc(var(--dy) * 0.95cqi))
+               scale(0.6) rotate(var(--spin));
+  }
+}
+@keyframes burst-fire {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+  12% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * 0.35cqi), calc(var(--dy) * 0.55cqi))
+               scale(1.1) rotate(calc(var(--spin) * 0.4));
+  }
+  45% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * 0.8cqi), calc(var(--dy) * 1cqi))
+               scale(1) rotate(var(--spin));
+  }
+  70% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * 1cqi), calc(var(--dy) * 1.05cqi))
+               scale(0.95) rotate(var(--spin));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * 1.12cqi), calc(var(--dy) * 0.95cqi))
+               scale(0.6) rotate(var(--spin));
+  }
+}
+
+/* Hover and focus strengthen the invitation. They never touch the button. */
+.room[data-hot='on'] .room__glow { opacity: 1.35; }
+
+/* ============================================================ the states */
+
+.room[data-state='entering-desktop'] .crt__readout { opacity: 0; }
+.room[data-state='entering-desktop'] .crt__wall { opacity: 1; }
+.room[data-state='entering-desktop'] .crt__scan { opacity: 0.25; }
+.room[data-state='entering-desktop'] .crt__go { pointer-events: none; }
+
+.room[data-state='entering-desktop'] .room__stage,
+.room[data-state='desktop'] .room__stage { pointer-events: none; }
+.room[data-state='entering-desktop'] .room__switch { pointer-events: none; opacity: 0; }
+.room[data-state='desktop'] { opacity: 0; visibility: hidden; }
+
+/* ------------------------------------------------------ controls (outside) */
 
 .room__switch {
   position: absolute;
@@ -226,21 +517,33 @@
   z-index: 4;
 }
 
-/* -------------------------------------------------------------- entering */
-
-.room[data-state='entering'] .room__world {
-  transition: transform var(--enter-duration) var(--enter-ease);
+.room__controls {
+  position: absolute;
+  right: max(var(--space-4), env(safe-area-inset-right, 0px));
+  bottom: max(var(--space-4), env(safe-area-inset-bottom, 0px));
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  opacity: 0.85;
+  transition: opacity 200ms linear;
 }
-.room[data-state='entering'] .crt__readout,
-.room[data-state='entering'] .crt__hint { opacity: 0; }
-.room[data-state='entering'] .crt__wall { opacity: 1; }
-.room[data-state='entering'] .crt__scan { opacity: 0.25; }
-.room[data-state='entering'] .crt__screen { cursor: default; }
+.room__controls:hover,
+.room__controls:focus-within { opacity: 1; }
+.room__controls[hidden] { display: none; }
 
-.room[data-state='entering'] .room__stage,
-.room[data-state='gone'] .room__stage { pointer-events: none; }
-.room[data-state='entering'] .room__switch { pointer-events: none; opacity: 0; }
-.room[data-state='gone'] { opacity: 0; visibility: hidden; }
+.room__btn {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.7rem;
+  border: var(--edge) solid var(--outline);
+  background: var(--surface-2);
+  color: var(--ink-on-surface);
+  font-family: var(--face-ui);
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+.room__btn:hover { background: var(--surface-3); }
+.room__btn[aria-pressed='true'] { background: var(--surface-3); }
 
 /* ---------------------------------------------------------- no JavaScript */
 
@@ -259,38 +562,35 @@
 .room__noscript p { margin: 0 0 var(--space-2); }
 .room__noscript ul { margin: 0; padding-left: 1.1rem; }
 
+/* Without JavaScript there is no camera, so the room must already be at rest
+   and the intro controls have nothing to control. */
+:root:not(.js) .room__controls { display: none; }
+
 /* -------------------------------------------------------------- responsive */
 
-@media (max-width: 56rem) {
-  .room__stage { padding-bottom: 8vh; }
-}
-
-/* On a phone the compact framing is shorter, so the floor comes up to meet it
-   instead of leaving a band of empty desk below the machine. */
-@media (max-width: 34rem) and (orientation: portrait) {
-  .room__sky {
-    background: linear-gradient(
-      180deg,
-      var(--bg) 0 30%,
-      var(--bg-2) 30% 50%,
-      var(--surface-1) 50% 68%,
-      var(--surface-2) 68% 100%
+@media (max-width: 34rem), (max-height: 26rem) and (max-width: 44rem),
+       (orientation: portrait) and (max-width: 48rem) {
+  .room__glow {
+    background: radial-gradient(
+      52% 34% at 40% 52%,
+      color-mix(in srgb, var(--cyan) 18%, transparent) 0%,
+      transparent 70%
     );
   }
-  .room__stars { inset: 0 0 32% 0; }
-  .room__ridge { bottom: 50%; }
-  .room__floor { inset-block-start: 68%; }
-  .room__glow { inset: 40% 0 0 0; }
-  .room__stage { padding-bottom: 16vh; }
-}
-
-@media (max-height: 30rem) and (orientation: landscape) {
-  .room__stage { padding-bottom: 0; }
-  .room__floor { inset-block-start: 84%; }
-  .room__ridge { bottom: 34%; }
+  /* The compact glass is 192px wide, so the button takes a larger share of it:
+     the label has to stay readable and the target thumb-sized without shrinking
+     the monitor itself. */
+  .crt__go { --btn-w: 58cqi; --btn-h: 26cqi; }
+  .crt__go-label { font-size: calc(var(--u) * 9); }
+  .invite__hand { width: 22cqi; left: calc(50% + 11cqi); top: calc(65% - 47cqi); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .crt__caret { animation: none; opacity: 1; }
-  .room[data-state='entering'] .room__world { transition: none; }
+  .crt__caret { animation: none !important; opacity: 0.9; }
+  /* A stationary hand and a button that still works: no press loop, no burst. */
+  .room:is([data-invite='on'], [data-invite='fire']) .invite__hand,
+  .room:is([data-invite='on'], [data-invite='fire']) .crt__go-face,
+  .room:is([data-invite='on'], [data-invite='fire']) .burst__bit { animation: none; }
+  .invite__hand { transform: translate(-22%, 42%); }
+  .burst { display: none; }
 }

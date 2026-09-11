@@ -18,6 +18,7 @@ secrets.json
 # Local
 node_modules/
 tmp/
+__pycache__/
 
 # Build output
 dist/

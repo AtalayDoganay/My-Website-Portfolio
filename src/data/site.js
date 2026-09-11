@@ -50,11 +50,24 @@ export const opening = {
   // A stable description for assistive tech. The typed characters are hidden
   // from screen readers, so this is what the screen is, not what it currently says.
   screenDescription:
-    'An old computer screen typing a greeting from Atalay Doganay. Activate it to open the desktop.',
+    'The computer screen. Activating this button opens the desktop.',
+
+  // What the opening prints. The timing lives in src/scripts/room.js; the words
+  // live here, because they are content.
+  bootWord: 'Wait',
+  lineOne: 'Welcome to my website...',
+  lineTwo: 'Hi, my name is Atalay Doganay...',
+  // Announced once, when the introduction is complete - not character by
+  // character, and never for the decorative burst.
+  introSpoken: 'Welcome to my website. Hi, my name is Atalay Doganay.',
+  skipLabel: 'Skip intro',
+  soundLabel: 'Intro sound',
+  invitePointer: 'CLICK!',
+  inviteTouch: 'TAP!',
 
   // Describes the rendered machine for anyone who cannot see it.
   machineAlt:
-    'A beige desktop computer from the late 1990s: a deep CRT monitor on a stand with a blank screen, and a keyboard on the desk in front of it.',
+    'A desktop computer from the late 1990s on a desk: a deep CRT monitor on a stand, an upright tower case to its right, and a keyboard and a wired two-button mouse in front of them, their cables running back to the tower.',
 
   desktopHeading: 'Atalay Doganay',
   desktopNote:
@@ -67,7 +80,7 @@ export const opening = {
 
   // Shown only when JavaScript is unavailable, so the site is still usable.
   fallback: {
-    line: 'Hii, my name is Atalay Doganay...',
+    line: 'Hi, my name is Atalay Doganay...',
     note: 'The opening scene needs JavaScript. The rest of the site does not.',
     links: [
       { label: 'Projects', href: '/projects/' },

@@ -27,8 +27,9 @@ thing this direction cannot afford.
 and CSS picks one, and `theme.js` is a render-blocking external file in the head - not
 an inline script - so the correct theme is on the root element before the first paint
 while the site's no-inline-script rule survives. Switching touches only palettes and
-which image is shown: the typing sequence, the flight, the desktop and its windows are
-all untouched, which the tests check explicitly.
+which image is shown: the opening, the flight, the desktop and its windows are all
+untouched, which the tests check explicitly - including a theme change made part-way
+through the introduction, which keeps its progress.
 
 Written 2026-09-09, with the first working local version.
 
@@ -174,8 +175,18 @@ Motion here is **weather**, not interface decoration.
   1600-unit offset, so a full translation returns to an identical frame and the loop is
   invisible.
 - The doorway glow breathes over 16 s.
-- That is all. Nothing animates on scroll, nothing fades in per section, there is no
-  loading sequence, no cursor effect, no audio.
+- That is all on the inner pages: nothing animates on scroll, nothing fades in per
+  section, there is no cursor effect.
+
+The home page is the exception, and deliberately so. It opens inside the display, prints
+two lines, and then ONE camera - a single transform on the scene's common parent - pulls
+back through the whole room until the desk, tower, keyboard, mouse and cables have all
+arrived around the monitor. It then invites a click with a gloved pixel hand and a short
+colourful burst on a two-second cycle with a quiet pause. Optional retro beeps are
+off until someone turns them on. Under `prefers-reduced-motion: reduce` the introduction
+is presented complete with no character animation, the room is revealed with a brief
+fade, and the hand stands still beside a plain Click/Tap label with no burst and no
+brightness pulse.
 
 Under `prefers-reduced-motion: reduce` every animation stops and the static frame is the
 composition — it was designed to be looked at still. Cross-document view transitions are

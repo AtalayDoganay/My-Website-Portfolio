@@ -78,6 +78,29 @@ async function sceneVariables() {
     throw new Error(`The screen is ${aspect.toFixed(2)}:1, which is not a tube shape.`);
   }
 
+  // The tabletop is continued past the artwork by a CSS band, so the desk meets
+  // both window edges instead of floating with wall showing past its ends. The
+  // row structure is read from the asset; only the key-to-token map lives here,
+  // and an unknown key is a build failure rather than a silently missing stripe.
+  const DESK_TOKENS = {
+    outline: '--outline',
+    desk_top: '--desk-top',
+    desk_front: '--desk-front',
+    desk_edge: '--desk-edge',
+  };
+  const rowPx = (n) => (n === 0 ? '0' : `calc(${n} * var(--px-scale) * 1px)`);
+  const deskBand = (desk, what) => {
+    let at = 0;
+    const stops = desk.rows.map(([n, key]) => {
+      const token = DESK_TOKENS[key];
+      if (!token) throw new Error(`The ${what} tabletop uses palette key "${key}", which has no CSS token.`);
+      const from = at;
+      at += n;
+      return `var(${token}) ${rowPx(from)} ${rowPx(at)}`;
+    });
+    return { height: at, css: `linear-gradient(180deg, ${stops.join(', ')})` };
+  };
+
   const pct = (n) => `${(n * 100).toFixed(4)}%`;
   const block = (c, r) => `  --screen-left: ${pct(r.left)};
   --screen-top: ${pct(r.top)};
@@ -85,6 +108,12 @@ async function sceneVariables() {
   --screen-height: ${pct(r.height)};
   --art-width: ${c[0]};
   --art-height: ${c[1]};`;
+
+  const wideBand = deskBand(meta.machine.desk, 'wide');
+  const compactBand = deskBand(compact.desk, 'narrow');
+  const deskBlock = (desk, band) => `  --desk-band-bottom: ${desk.fromBottom};
+  --desk-band-height: ${band.height};
+  --desk-band: ${band.css};`;
 
   return `/* ---------- generated from src/assets/pixel/pixel.json ---------- */
 /* ${meta.generatedBy}
@@ -94,10 +123,18 @@ async function sceneVariables() {
 ${block(canvas, f)}
 }
 
+.room {
+${deskBlock(meta.machine.desk, wideBand)}
+}
+
 /* Narrow screens get their own framing, not a shrunken copy of the wide one. */
-@media (max-width: 34rem), (max-height: 26rem) {
+@media (max-width: 34rem), (max-height: 26rem) and (max-width: 44rem), (orientation: portrait) and (max-width: 48rem) {
   .crt {
 ${block(compact.canvas, compact.screenFraction)}
+  }
+
+  .room {
+${deskBlock(compact.desk, compactBand)}
   }
 }
 `;

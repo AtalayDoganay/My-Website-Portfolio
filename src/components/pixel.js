@@ -46,6 +46,95 @@ export const DOORWAY = [
 ];
 
 /**
+ * A two-tone sprite: the same integer grid, but an ink layer and a lit layer so
+ * a shape can carry the design's one-unit outline without a second element.
+ * The layers are classed rather than filled inline, so they take their colours
+ * from the theme like everything else.
+ *
+ * @param {{ink: Array<[number,number,number,number]>, lit: Array<[number,number,number,number]>}} layers
+ */
+export function pixelSprite(layers, { w = 16, h = 16, className = '' } = {}) {
+  const group = (cls, rects) =>
+    !rects || !rects.length
+      ? ''
+      : `<g class="${cls}">` +
+        rects.map(([x, y, rw, rh]) => `<rect x="${x}" y="${y}" width="${rw}" height="${rh}"/>`).join('') +
+        '</g>';
+  const body = ['ink', 'fill', 'cuff', 'dim', 'hi']
+    .map((name) => group('px-sprite__' + name, layers[name]))
+    .join('');
+  return `<svg class="px-sprite${className ? ' ' + esc(className) : ''}" viewBox="0 0 ${w} ${h}"
+       aria-hidden="true" focusable="false" shape-rendering="crispEdges">${body}</svg>`;
+}
+
+// A gloved hand pointing down and to the right, on a 12 x 16 native grid.
+//
+// Proportions come from Kenney's CC0 Cursor Pixel Pack (tiles 0134-0137,
+// inspected at 26x): the index finger is SHORT and THICK against a chunky
+// rectangular palm - about three pixels wide and five long against a nine by
+// seven palm - and the read comes from the silhouette and its outline rather
+// than from internal detail. A long thin finger on a round palm is what made
+// the previous pointer look like a balloon on a stick. Nothing is copied: the
+// pack's cursors are flat white, and this one is drawn in our own palette with
+// a cuff, folded fingers, and deliberate highlight and shadow pixels.
+//
+// Layers paint in order: ink (silhouette), fill (glove), cuff, dim, hi.
+export const HAND_POINT = {
+  ink: [
+    [3, 0, 6, 1], [2, 1, 8, 2], [1, 3, 10, 2],
+    [0, 5, 11, 3],                              // the thumb, out to the left
+    [1, 8, 10, 1],
+    [2, 9, 9, 2],                               // the palm's closed bottom edge
+    [6, 11, 5, 1], [7, 12, 4, 2], [8, 14, 3, 2],
+  ],
+  fill: [
+    [3, 1, 6, 2],
+    [2, 3, 8, 2], [1, 5, 9, 3], [2, 8, 8, 1], [3, 9, 7, 1],
+    [7, 10, 3, 4], [8, 14, 2, 1],               // a short, THICK finger
+  ],
+  cuff: [[3, 1, 6, 2]],                         // a small band at the wrist
+  dim: [
+    [9, 4, 1, 5], [9, 9, 1, 1],                 // the shaded right flank
+    [9, 12, 1, 2],                              // and down the finger
+    [4, 9, 1, 1], [6, 9, 1, 1],                 // creases: three folded fingers
+  ],
+  hi: [
+    [2, 4, 1, 1], [1, 5, 1, 2],                 // lit upper left, on the thumb
+    [3, 3, 4, 1],
+    [7, 10, 1, 3],
+  ],
+};
+
+// The same glove mirrored to point down and to the LEFT, for a hand that sits
+// above and to the right of the button it is demonstrating. Mirrored geometry,
+// but the highlights and shadows are re-authored rather than flipped: the light
+// stays up and to the left, so the lit edge belongs on the left of the new
+// silhouette and the shaded flank on its right.
+export const HAND_POINT_LEFT = {
+  ink: [
+    [3, 0, 6, 1], [2, 1, 8, 2], [1, 3, 10, 2],
+    [1, 5, 11, 3],                              // the thumb, out to the right
+    [1, 8, 10, 1], [1, 9, 9, 2],
+    [1, 11, 5, 1], [1, 12, 4, 2], [1, 14, 3, 2],
+  ],
+  fill: [
+    [3, 1, 6, 2], [2, 3, 8, 2], [2, 5, 9, 3],
+    [2, 8, 8, 1], [2, 9, 7, 1],
+    [2, 10, 3, 4], [2, 14, 2, 1],
+  ],
+  cuff: [[3, 1, 6, 2]],
+  dim: [
+    [9, 4, 1, 6], [9, 10, 1, 1],                // the shaded right flank
+    [4, 11, 1, 3],                              // and down the right of the finger
+    [5, 9, 1, 1], [7, 9, 1, 1],                 // creases: three folded fingers
+  ],
+  hi: [
+    [2, 4, 1, 1], [2, 5, 1, 2], [4, 3, 4, 1],
+    [2, 10, 1, 4],                              // the lit left edge of the finger
+  ],
+};
+
+/**
  * The theme switch. Both icons are always in the markup; CSS shows whichever the
  * current theme calls for, so switching never waits on JavaScript to redraw.
  */

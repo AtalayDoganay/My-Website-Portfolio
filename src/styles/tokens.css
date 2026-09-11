@@ -74,6 +74,31 @@
   --title-b: #2a4fb4;
   --title-ink: #ffffff;
 
+  /* The desk is its own material, so a machine's lit top face never lands on a
+     tabletop of the same value. These four mirror tools/pixel_art.py exactly;
+     the page paints the rows past the artwork's edges with them. */
+  /* The equipment is beige plastic, lit warm and shadowed cool. These mirror
+     tools/pixel_art.py so the pointing hand and the invitation's highlights are
+     made of the same material as the machine they sit on. */
+  --case-top: #a39c86;
+  --case-edge: #c4bea8;
+  --case-deep: #3a3b4c;
+
+  /* Accents, used only by the invitation. The hand needs its own value: it
+     hangs over the monitor's casing, and anything in the case palette would
+     disappear into it and leave nothing but an outline. */
+  --pink: #f59bc4;
+  --gold: #f5d98f;
+  --coral: #ff8a7a;
+  --hand: #f2cf9c;
+  --hand-dim: #c08f57;
+  --hand-hi: #fff3dc;
+
+  --desk-top: #4a4a7a;
+  --desk-front: #34355e;
+  --desk-side: #2e2f52;
+  --desk-edge: #6a66a0;
+
   --shadow: rgb(0 0 0 / 0.55);
 }
 
@@ -104,6 +129,22 @@
   --title-a: #4a72d8;
   --title-b: #2a4fb4;
   --title-ink: #ffffff;
+
+  --case-top: #f0ece0;
+  --case-edge: #fffef8;
+  --case-deep: #8d897c;
+
+  --pink: #a8407a;
+  --gold: #795d10;   /* 5.4:1 on --bg: the burst marks are text */
+  --coral: #c03a28;
+  --hand: #e8b878;
+  --hand-dim: #a06a2a;
+  --hand-hi: #ffeccd;
+
+  --desk-top: #c3bbe0;
+  --desk-front: #a197c6;
+  --desk-side: #8177a8;
+  --desk-edge: #e9e5f7;
 
   --shadow: rgb(20 24 44 / 0.28);
 }
