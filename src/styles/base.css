@@ -2,36 +2,45 @@
 
 html {
   -webkit-text-size-adjust: 100%;
-  scroll-behavior: smooth;
   scroll-padding-top: var(--space-6);
 }
 
 body {
   margin: 0;
-  /* Column layout so the footer settles at the foot of a short page
-     instead of leaving a band of bare paper beneath it. */
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  background: var(--paper);
+  background: var(--bg);
   color: var(--ink);
   font-family: var(--face-text);
   font-size: var(--step-0);
-  line-height: var(--leading-body);
-  font-optical-sizing: auto;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 img, svg { display: block; max-width: 100%; }
-img { height: auto; }
 
-::selection { background: var(--door-light); color: var(--ink); }
+/* Every raster asset on this site is pixel art, so nothing is ever smoothed. */
+img {
+  height: auto;
+  image-rendering: pixelated;
+}
 
+/* Icons are SVG so they take the theme's colour from currentColor; crispEdges
+   keeps their squares square at any size. */
+.px-icon {
+  width: 1em;
+  height: 1em;
+  shape-rendering: crispEdges;
+}
+
+::selection { background: var(--cyan); color: var(--bg); }
+
+/* A square focus ring, to match everything else on the grid. */
 :focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
-  border-radius: 3px;
+  outline: var(--edge) solid var(--cyan);
+  outline-offset: var(--edge);
+  border-radius: 0;
 }
 
 .skip-link {
@@ -40,10 +49,10 @@ img { height: auto; }
   top: var(--space-3);
   z-index: 80;
   padding: 0.7rem var(--space-4);
-  background: var(--paper-raised);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-card);
-  color: var(--ink);
+  border: var(--edge) solid var(--outline);
+  background: var(--surface-3);
+  color: var(--ink-on-surface);
+  font-family: var(--face-ui);
   font-size: var(--step--1);
   text-decoration: none;
   transform: translateY(calc(-100% - var(--space-5)));
@@ -60,49 +69,45 @@ img { height: auto; }
   white-space: nowrap;
 }
 
-/* The home page is a single fixed composition: no scrolling, no document flow. */
+/* The home page is one fixed composition: no scrolling, no document flow. */
 .immersive,
 .immersive__body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
 }
+.immersive__body { margin: 0; background: var(--bg); }
+.immersive #main { display: contents; }
 
-.immersive__body {
-  margin: 0;
-  background: #05060f;
-  color: #e6e9f5;
+/* --------------------------------------------------------- theme switch */
+
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  /* compact styling, but a finger-sized target */
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: var(--edge) solid var(--outline);
+  background: var(--surface-2);
+  color: var(--ink-on-surface);
+  cursor: pointer;
 }
+.theme-toggle:hover { background: var(--surface-3); }
+.theme-toggle:active { background: var(--surface-1); }
 
-/* A film of grain over the whole page. Purely atmospheric: it never intercepts
-   a click and it sits at 5% so it cannot affect text contrast meaningfully. */
-.grain {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 180px 180px;
-}
+.theme-toggle__box { display: grid; place-items: center; }
+.theme-toggle .px-icon { width: 1.25rem; height: 1.25rem; }
 
-/* Multiplying grain onto a dark scene only makes mud; on dark it has to add light. */
-.grain--dark {
-  mix-blend-mode: overlay;
-  opacity: 0.085;
-}
-
-/* Cross-document view transitions, where the browser supports them: the sky is
-   the same on every page, so a page change should feel like turning around
-   rather than being cut to somewhere new. Ignored everywhere else. */
-@view-transition { navigation: auto; }
+/* Both icons ship in the markup and the theme decides which shows, so switching
+   never waits on script to redraw. The icon shown is the one you switch TO. */
+.theme-toggle__sun { display: block; }
+.theme-toggle__moon { display: none; }
+:root[data-theme='light'] .theme-toggle__sun { display: none; }
+:root[data-theme='light'] .theme-toggle__moon { display: block; }
 
 @media (prefers-reduced-motion: reduce) {
-  @view-transition { navigation: none; }
-
   html { scroll-behavior: auto; }
-
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;

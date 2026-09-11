@@ -1,5 +1,35 @@
 # Design notes
 
+## Pixel art, in two themes (2026-09-10, current direction)
+
+The site is pixel art throughout: the computer, the keyboard, the room, the desktop
+wallpaper, the icons, the windows, the taskbar and the inner pages all share one grid
+and one pair of palettes. This replaced the photorealistic Blender render; that work is
+described further down and its asset is no longer part of the site.
+
+**Outlines are the rule.** Pure #FFFFFF on dark, pure #000000 on light, one grid unit
+thick, on every outlined object. Both palettes live in `src/styles/tokens.css` and
+mirror the generator's palettes exactly, so a window border and the monitor's outline
+are literally the same value.
+
+**Whole-number scaling only.** Raster art is never shown at a fractional multiple; the
+scale is picked from the viewport by `src/scripts/room.js` and rechecked on resize.
+Narrow and short screens get a *different composition* rather than a smaller copy - the
+monitor alone on a smaller canvas - because shrinking the wide framing left the tube
+unreadable.
+
+**The monitor faces right by drawing, not by transform.** Its oblique depth runs back
+and to the left, so you see its left casing; the front face stays a true rectangle on
+the grid. A keystoned screen would resample the live text off the grid, which is the one
+thing this direction cannot afford.
+
+**Theme switching costs nothing at runtime.** Both artwork variants are in the markup
+and CSS picks one, and `theme.js` is a render-blocking external file in the head - not
+an inline script - so the correct theme is on the root element before the first paint
+while the site's no-inline-script rule survives. Switching touches only palettes and
+which image is shown: the typing sequence, the flight, the desktop and its windows are
+all untouched, which the tests check explicitly.
+
 Written 2026-09-09, with the first working local version.
 
 The direction Atalay chose: **dreamcore** — a quiet, nostalgic, slightly surreal place.

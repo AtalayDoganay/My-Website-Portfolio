@@ -66,13 +66,15 @@ What each check covers, and what is still unavailable, is in `docs/RELEASE-CHECK
 | `src/pages/` | One module per page |
 | `src/components/` | Page shell, the scenes, and the reusable pieces |
 | `src/scripts/room.js` | The opening scene's behaviour. Timing is in `TUNING` at the top |
-| `src/assets/scene/` | The rendered computer and the metadata that positions its screen |
-| `tools/model_crt.py` | Models and renders that computer in Blender. See `docs/ASSETS.md` |
+| `src/assets/pixel/` | The pixel art and the metadata that positions the screen |
+| `tools/pixel_art.py` | Draws all of it. See `docs/ASSETS.md` |
+| `src/scripts/theme.js` | Theme state, loaded render-blocking so nothing flashes |
 | `src/styles/` | Design tokens and stylesheets, concatenated at build time |
 | `src/assets/fonts/` | Self-hosted Fraunces and Karla, with their licences |
 | `build.mjs` / `serve.mjs` | The build and the preview server |
 | `tools/check_pages.py` | Browser checks: contrast, axe, focus, overflow, reduced motion |
 | `tools/check_room.py` | Drives the whole opening sequence in a browser and measures it |
+| `tools/check_theme.py` | Both themes across seven viewports: outlines, scaling, persistence |
 | `tools/check_escaping.mjs` | Proves data cannot become markup, and self-tests that it can detect injection |
 | `tools/check_links.mjs` | Internal link and fragment resolution |
 | `dist/` | Build output. Not committed |

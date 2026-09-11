@@ -1,36 +1,23 @@
 /* ===========================================================================
-   The opening scene: a beige CRT in a dark, hazy room.
+   The opening scene.
 
-   Everything tunable lives in the block below. The screen aperture percentages
-   are the SVG's real geometry - build.mjs fails if they drift from the numbers
-   in src/components/room.js, so the interactive element can never slide off
-   the drawn glass.
+   The machine is pixel art drawn at 216x150 and scaled by a WHOLE NUMBER, so
+   every source pixel lands on an exact block of device pixels and nothing
+   shimmers when the composition resizes. The scale is chosen by the page
+   script; the value in tokens.css is the fallback before it runs.
+
+   The room around it is CSS only - flat bands with hard stops and a
+   checkerboard dither - so it stays crisp at any viewport with no extra asset.
    ========================================================================= */
 
 .room {
-  /* --- environment --- */
-  --void: #05060f;
-  --deep: #0c1026;
-  --indigo: #171338;
-  --violet: #241a45;
-  --cyan: #6fe3f5;
-  --pink: #ff8fd0;
-  --desk-line: 67%;
-
-  /* --- screen --- */
-  --phosphor: #a9ecff;
-  --screen-base: #060b16;
-  --screen-lift: #12253a;
-  --screen-font: 6cqi;
-
-  /* --- timing --- */
   --enter-duration: 1400ms;
   --enter-ease: cubic-bezier(0.62, 0.02, 0.34, 1);
 
   position: fixed;
   inset: 0;
   overflow: hidden;
-  background: var(--void);
+  background: var(--bg);
   isolation: isolate;
 }
 
@@ -41,109 +28,94 @@
   will-change: transform;
 }
 
-/* --------------------------------------------------------------- environment */
+/* ----------------------------------------------------------- environment */
 
 .room__env { position: absolute; inset: 0; }
 .room__env > span { position: absolute; display: block; }
 
+/* Hard stops, never a blend: this sky is banded on purpose. */
 .room__sky {
   inset: 0;
   background: linear-gradient(
     180deg,
-    #04050d 0%,
-    #080c1e 26%,
-    #121132 50%,
-    #1d1740 64%,
-    #140f28 74%,
-    #080913 100%
+    var(--bg) 0 34%,
+    var(--bg-2) 34% 56%,
+    var(--surface-1) 56% 78%,
+    var(--surface-2) 78% 100%
   );
 }
 
-/* A distant band of light where the room stops being a room. */
-.room__horizon {
-  inset-inline: -10%;
-  top: 34%;
-  height: 40%;
+/* 2x2 checkerboards at 4px: the dither that breaks each band edge. */
+.room__stars {
+  inset: 0 0 22% 0;
   background:
-    radial-gradient(46% 62% at 64% 88%, rgb(150 180 255 / 0.28) 0%, transparent 70%),
-    radial-gradient(70% 46% at 30% 96%, rgb(111 227 245 / 0.2) 0%, transparent 72%);
-  filter: blur(38px);
+    repeating-conic-gradient(var(--bg-2) 0% 25%, transparent 0% 50%) 0 34% / 4px 4px,
+    repeating-conic-gradient(var(--surface-1) 0% 25%, transparent 0% 50%) 0 56% / 4px 4px;
+  background-repeat: repeat-x;
+  opacity: 0.7;
 }
 
-.room__haze {
-  inset-inline: -20%;
-  border-radius: 50%;
-  filter: blur(46px);
-}
-.room__haze--far {
-  top: 50%;
-  height: 14%;
-  background: linear-gradient(90deg, transparent, rgb(168 186 255 / 0.26) 42%, rgb(190 200 255 / 0.14) 70%, transparent);
-}
-.room__haze--near {
-  top: 60%;
-  height: 11%;
-  background: linear-gradient(90deg, transparent 6%, rgb(255 154 212 / 0.16) 62%, transparent 96%);
-}
-
-/* The desk plane. */
-.room__desk {
+.room__ridge {
   inset-inline: 0;
-  top: calc(var(--desk-line) - 3%);
-  bottom: 0;
-  background:
-    /* the lit front edge of the desk, brightest where the screen faces it */
-    radial-gradient(38% 3% at 30% 3%, rgb(150 225 250 / 0.5) 0%, transparent 75%),
-    linear-gradient(180deg, transparent 0%, #14152c 3%, #0d0d1e 46%, #06060d 100%);
+  bottom: 44%;
+  height: 0;
+  border-top: var(--edge) solid var(--outline);
+  opacity: 0.45;
 }
 
-/* Screen light pooling on the desk, and the bloom hanging in the air. */
-.room__pool {
-  inset-inline: 0;
-  top: calc(var(--desk-line) - 6%);
-  height: 44%;
+.room__floor {
+  inset: 78% 0 0 0;
+  background: var(--surface-2);
+  border-top: var(--edge) solid var(--outline);
+}
+
+/* The only glow in the scene, thrown by the tube onto the floor in front. */
+.room__glow {
+  inset: 44% 0 0 0;
   background: radial-gradient(
-    40% 90% at 29% 0%,
-    rgb(120 230 250 / 0.34) 0%,
-    rgb(111 227 245 / 0.12) 40%,
-    transparent 76%
+    30% 40% at 50% 34%,
+    color-mix(in srgb, var(--cyan) 22%, transparent) 0%,
+    transparent 70%
   );
-  filter: blur(26px);
 }
 
-/* The light the screen throws into the air of the room. */
-.room__bloom {
-  inset: 0;
-  background:
-    radial-gradient(34% 40% at 28% 40%, rgb(120 230 250 / 0.26) 0%, rgb(120 230 250 / 0.06) 46%, transparent 72%),
-    radial-gradient(46% 44% at 92% 12%, rgb(255 143 208 / 0.16) 0%, transparent 70%);
-}
+/* ----------------------------------------------------------- the machine */
 
-/* --------------------------------------------------------------- the machine */
-
-.room__stage { position: absolute; inset: 0; }
-
-/* The machine: a pre-rendered image, positioned so its desk line sits on the room's.
-   The asset is 2600x1642, and the screen rectangle inside it comes from the renderer
-   (see the generated block at the end of styles.css). */
-.crt {
+.room__stage {
   position: absolute;
-  left: 1%;
-  bottom: 3%;
-  width: clamp(340px, min(70vw, 124vh), 1280px);
-  aspect-ratio: 2600 / 1642;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  /* the composition sits a little above the optical centre */
+  padding-bottom: 10vh;
 }
 
-.crt__art {
-  display: block;
-  width: 100%;
-  height: auto;
-  /* the render already carries its own contact shadow in the alpha */
-  pointer-events: none;
-  user-select: none;
+.crt {
+  position: relative;
+  /* --art-width comes from the generated block and changes with the framing. */
+  width: calc(var(--art-width) * 1px * var(--px-scale));
+  max-width: 100%;
 }
 
-/* ------------------------------------------------------------- the screen */
+.crt__art { width: 100%; }
+
+/* Four images: two framings by two themes. Exactly one is shown; the others are
+   removed from flow so the box never changes size or double-counts height. */
+.crt__art { display: none; }
+.crt__art--wide.crt__art--dark { display: block; }
+:root[data-theme='light'] .crt__art--wide.crt__art--dark { display: none; }
+:root[data-theme='light'] .crt__art--wide.crt__art--light { display: block; }
+
+@media (max-width: 34rem), (max-height: 26rem) {
+  .crt__art--wide { display: none !important; }
+  .crt__art--narrow.crt__art--dark { display: block; }
+  :root[data-theme='light'] .crt__art--narrow.crt__art--dark { display: none; }
+  :root[data-theme='light'] .crt__art--narrow.crt__art--light { display: block; }
+}
+
+/* ------------------------------------------------------------- the screen
+   Positioned from the fractions tools/pixel_art.py measured on the grid and
+   build.mjs emitted at the end of this stylesheet. */
 
 .crt__screen {
   position: absolute;
@@ -154,11 +126,10 @@
   container-type: inline-size;
   padding: 0;
   border: 0;
-  border-radius: 1.2cqi;
   background: transparent;
-  cursor: pointer;
   color: inherit;
   font: inherit;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -166,234 +137,158 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  border-radius: inherit;
-  /* Clipped to the glass the front moulding actually leaves visible, so the text is
-     occluded by the bezel rather than painted over it. */
-  clip-path: inset(
-    var(--screen-clip-top, 0%) var(--screen-clip-right, 0%)
-    var(--screen-clip-bottom, 0%) var(--screen-clip-left, 0%)
-  );
-  background:
-    radial-gradient(118% 128% at 46% 38%, var(--screen-lift) 0%, var(--screen-base) 70%);
-  transition: filter 260ms ease;
+  background: var(--glass);
+  transition: background-color var(--tap) var(--ease);
 }
 
-/* The readout: one line of terminal text, left aligned, sitting in from the edge.
-   The row has a reserved height so nothing shifts as characters arrive. */
 .crt__readout {
   position: absolute;
-  left: 7cqi;
-  right: 5cqi;
+  left: 6cqi;
+  right: 4cqi;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: baseline;
-  min-height: 2.6em;
+  min-height: 2.2em;
   font-family: var(--face-crt);
-  font-size: var(--screen-font);
-  line-height: 1.3;
-  color: var(--phosphor);
+  font-size: 6.2cqi;
+  line-height: 1.2;
+  color: var(--cyan);
   text-align: left;
   white-space: pre;
-  text-shadow:
-    0 0 0.16em rgb(111 227 245 / 0.85),
-    0 0 0.5em rgb(111 227 245 / 0.35);
-  transition: opacity 220ms ease;
 }
+:root[data-theme='light'] .crt__readout { color: var(--ink); }
 
 .crt__line { white-space: pre; }
 
 .crt__caret {
   display: inline-block;
-  width: 0.5em;
-  height: 0.92em;
-  margin-left: 0.06em;
+  width: 0.52em;
+  height: 0.9em;
+  margin-left: 0.08em;
   background: currentColor;
   translate: 0 0.08em;
   animation: caret 1.06s steps(1, end) infinite;
 }
 @keyframes caret {
-  0%, 55%   { opacity: 1; }
+  0%, 55% { opacity: 1; }
   56%, 100% { opacity: 0; }
 }
-
-/* The typing caret holds steady while characters are arriving, and only blinks
-   once the machine is waiting for you. */
 .room[data-typing='running'] .crt__caret { animation: none; opacity: 1; }
 
-/* Persistent invitation, used on touch where there is no hover. */
 .crt__hint {
   position: absolute;
-  left: 7cqi;
-  right: 5cqi;
+  left: 6cqi;
+  right: 4cqi;
   bottom: 6cqi;
   font-family: var(--face-crt);
-  font-size: calc(var(--screen-font) * 0.72);
-  line-height: 1.2;
-  color: var(--phosphor);
-  text-align: left;
+  font-size: 5cqi;
+  color: var(--cyan);
   opacity: 0;
-  text-shadow: 0 0 0.2em rgb(111 227 245 / 0.7);
-  transition: opacity 240ms ease;
+  transition: opacity var(--tap) var(--ease);
 }
-.room[data-invite='on'] .crt__hint { opacity: 0.82; }
+:root[data-theme='light'] .crt__hint { color: var(--ink); }
+.room[data-invite='on'] .crt__hint { opacity: 0.92; }
 
-/* Scanlines, curvature falloff, and a broad reflection on the glass. */
+/* Scanlines at two device pixels, so they belong to the same grid. */
 .crt__scan {
   position: absolute;
   inset: 0;
   background: repeating-linear-gradient(
     180deg,
-    rgb(0 0 0 / 0.26) 0 1.5px,
-    transparent 1.5px 4px
+    color-mix(in srgb, var(--bg) 45%, transparent) 0 2px,
+    transparent 2px 4px
   );
-  mix-blend-mode: multiply;
-  opacity: 0.55;
 }
 
-.crt__curve {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(115% 118% at 50% 48%, transparent 52%, rgb(0 0 0 / 0.72) 100%);
-}
-
-.crt__sheen {
-  position: absolute;
-  inset: 0;
-  background:
-    /* the broad reflection a curved tube throws back at the room */
-    radial-gradient(80% 55% at 22% 12%, rgb(190 225 245 / 0.10) 0%, transparent 62%),
-    linear-gradient(118deg, rgb(255 255 255 / 0.05) 0%, rgb(255 255 255 / 0.012) 24%, transparent 44%);
-}
-
-/* The wallpaper waiting behind the text: it is what you fly into. */
+/* The wallpaper waiting behind the text: what you fly into. */
 .crt__wall {
   position: absolute;
   inset: 0;
   opacity: 0;
-  background:
-    radial-gradient(28% 20% at 74% 26%, rgb(255 246 222 / 0.5) 0%, transparent 60%),
-    linear-gradient(180deg, #120f2c 0%, #1b1742 40%, #2c2059 60%, #1a2440 74%, #101a2c 100%);
-  transition: opacity 420ms ease;
+  background: var(--surface-1);
+  transition: opacity 420ms var(--ease-smooth);
 }
 
-/* --- lit state: pointer over the glass, or keyboard focus --------------- */
+/* --- lit state --------------------------------------------------------- */
 
 .crt__screen:is(:hover, :focus-visible) .crt__glass,
-.room[data-hot='on'] .crt__glass {
-  filter: brightness(1.22) saturate(1.05);
-  box-shadow:
-    inset 0 0 4cqi rgb(0 0 0 / 0.7),
-    inset 0 0 1cqi rgb(0 0 0 / 0.75),
-    0 0 6cqi rgb(111 227 245 / 0.18);
+.room[data-hot='on'] .crt__glass { background: var(--glass-lit); }
+
+.crt__screen:focus-visible { outline-offset: var(--edge); }
+
+/* ---------------------------------------------------------- theme switch */
+
+.room__switch {
+  position: absolute;
+  top: max(var(--space-4), env(safe-area-inset-top, 0px));
+  right: max(var(--space-4), env(safe-area-inset-right, 0px));
+  z-index: 4;
 }
 
-.crt__screen:focus-visible {
-  outline: 3px solid var(--cyan);
-  outline-offset: 6px;
-}
-
-/* --- entering: the room scales up around the screen --------------------- */
+/* -------------------------------------------------------------- entering */
 
 .room[data-state='entering'] .room__world {
   transition: transform var(--enter-duration) var(--enter-ease);
 }
-.room[data-state='entering'] .crt__readout { opacity: 0; }
+.room[data-state='entering'] .crt__readout,
 .room[data-state='entering'] .crt__hint { opacity: 0; }
 .room[data-state='entering'] .crt__wall { opacity: 1; }
-.room[data-state='entering'] .crt__scan { opacity: 0.2; }
+.room[data-state='entering'] .crt__scan { opacity: 0.25; }
 .room[data-state='entering'] .crt__screen { cursor: default; }
 
-.room[data-state='entering'],
-.room[data-state='gone'] { pointer-events: none; }
-
+.room[data-state='entering'] .room__stage,
+.room[data-state='gone'] .room__stage { pointer-events: none; }
+.room[data-state='entering'] .room__switch { pointer-events: none; opacity: 0; }
 .room[data-state='gone'] { opacity: 0; visibility: hidden; }
 
-/* --------------------------------------------------------- no JavaScript */
+/* ---------------------------------------------------------- no JavaScript */
 
 .room__noscript {
   position: absolute;
-  right: 4%;
-  top: 50%;
-  transform: translateY(-50%);
-  max-width: 26rem;
-  padding: 1.5rem 1.75rem;
-  border: 1px solid rgb(111 227 245 / 0.35);
-  border-radius: 12px;
-  background: rgb(8 10 24 / 0.86);
-  color: #dfe6f5;
-  font-family: var(--face-text);
-  font-size: 0.95rem;
-  line-height: 1.6;
+  left: 50%;
+  bottom: 6%;
+  translate: -50% 0;
+  max-width: min(28rem, 88vw);
+  padding: var(--space-4) var(--space-5);
+  border: var(--edge) solid var(--outline);
+  background: var(--surface-1);
+  color: var(--ink);
+  font-size: var(--step--1);
 }
-.room__noscript p { margin: 0 0 0.75rem; }
+.room__noscript p { margin: 0 0 var(--space-2); }
 .room__noscript ul { margin: 0; padding-left: 1.1rem; }
-.room__noscript a { color: var(--cyan); }
 
-/* ------------------------------------------------------------- responsive */
+/* -------------------------------------------------------------- responsive */
 
-/* ------------------------------------------------------------- responsive
-
-   Narrow screens do not get a shrunken version of the wide composition. The asset is
-   scaled up and moved so the GLASS lands where it should, which frames the machine
-   tightly and keeps the display readable. The anchor arithmetic uses the fractions
-   the renderer measured, so it stays correct if the asset is ever re-rendered.
-   ------------------------------------------------------------------------- */
-
-/* Tablets and small laptops: centred, still showing the whole desk. */
 @media (max-width: 56rem) {
-  .room { --desk-line: 72%; }
-  .crt {
-    left: 50%;
-    translate: -50% 0;
-    bottom: 10%;
-    width: min(104vw, 168vh);
-  }
-  .room__pool {
-    background: radial-gradient(
-      54% 100% at 50% 0%,
-      rgb(111 227 245 / 0.2) 0%,
-      rgb(111 227 245 / 0.06) 45%,
-      transparent 75%
+  .room__stage { padding-bottom: 8vh; }
+}
+
+/* On a phone the compact framing is shorter, so the floor comes up to meet it
+   instead of leaving a band of empty desk below the machine. */
+@media (max-width: 34rem) and (orientation: portrait) {
+  .room__sky {
+    background: linear-gradient(
+      180deg,
+      var(--bg) 0 30%,
+      var(--bg-2) 30% 50%,
+      var(--surface-1) 50% 68%,
+      var(--surface-2) 68% 100%
     );
   }
-  .room__noscript {
-    right: 50%;
-    top: auto;
-    bottom: 4%;
-    translate: 50% 0;
-    transform: none;
-    max-width: 88vw;
-  }
+  .room__stars { inset: 0 0 32% 0; }
+  .room__ridge { bottom: 50%; }
+  .room__floor { inset-block-start: 68%; }
+  .room__glow { inset: 40% 0 0 0; }
+  .room__stage { padding-bottom: 16vh; }
 }
 
-/* Phones in portrait: frame the monitor, let the desk run off the bottom. */
-@media (max-width: 40rem) and (orientation: portrait) {
-  .room { --desk-line: 76%; }
-  .crt {
-    --crt-w: min(215vw, 138vh);
-    width: var(--crt-w);
-    left: calc(50% - var(--crt-w) * var(--screen-cx));
-    top: calc(44% - (var(--crt-w) / var(--crt-aspect)) * var(--screen-cy));
-    bottom: auto;
-    translate: none;
-  }
-}
-
-/* Landscape phones: height is the scarce axis, so pull back and sit it low. */
 @media (max-height: 30rem) and (orientation: landscape) {
-  .room { --desk-line: 78%; }
-  .crt {
-    --crt-w: min(96vw, 220vh);
-    width: var(--crt-w);
-    left: calc(46% - var(--crt-w) * var(--screen-cx));
-    top: calc(46% - (var(--crt-w) / var(--crt-aspect)) * var(--screen-cy));
-    bottom: auto;
-    translate: none;
-  }
+  .room__stage { padding-bottom: 0; }
+  .room__floor { inset-block-start: 84%; }
+  .room__ridge { bottom: 34%; }
 }
-
-/* ------------------------------------------------------- reduced motion */
 
 @media (prefers-reduced-motion: reduce) {
   .crt__caret { animation: none; opacity: 1; }

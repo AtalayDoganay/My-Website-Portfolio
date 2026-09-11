@@ -1,43 +1,38 @@
-// The desktop behind the glass: an early-2000s Windows-era shell.
+// The desktop behind the glass: early-2000s Windows-era layout, rebuilt on the
+// pixel grid. Blue title bar, compact window controls, bevelled window, Start
+// button, taskbar - all of it drawn with hard one-pixel edges and the theme's
+// outline colour, with pixel-art icons rather than smooth ones.
 //
-// The era is referenced, not copied. The title bar gradient, the bevels, the inset
-// fields, the compact toolbar and the taskbar proportions are all built here from
-// this site's own colours. There is no Microsoft logo, no Luna artwork, no borrowed
-// icon set, and the wallpaper is the site's own night meadow.
-//
-// This phase builds the shell only. Every control that looks operable is operable:
-// the Start button opens a real menu, the menu item really leaves, the window really
-// closes, and the clock shows the real time. Nothing here is a painted-on affordance.
+// The era is referenced, not copied: no Microsoft logo, no Luna artwork, no
+// borrowed icon set. Every control that looks operable is operable.
 
 import { esc } from '../lib/html.js';
+import { pixelIcon, themeToggle, WINDOW_MARK, DOORWAY } from './pixel.js';
 
-/** The three window controls, at the size the era actually used. */
-const windowButtons = () => `      <div class="win__buttons">
-        <button class="win__btn win__btn--min" type="button" data-window-min
-                aria-label="Minimise this window"><span aria-hidden="true"></span></button>
-        <button class="win__btn win__btn--max" type="button" disabled
-                aria-label="Maximise (this window cannot be resized)"><span aria-hidden="true"></span></button>
-        <button class="win__btn win__btn--close" type="button" data-window-close
-                aria-label="Close this window"><span aria-hidden="true"></span></button>
-      </div>`;
+const CLOSE = [[3, 3, 2, 2], [5, 5, 2, 2], [7, 7, 2, 2], [9, 9, 2, 2], [11, 11, 2, 2],
+               [11, 3, 2, 2], [9, 5, 2, 2], [5, 9, 2, 2], [3, 11, 2, 2]];
+const MINIMISE = [[3, 10, 10, 2]];
+const MAXIMISE = [[3, 3, 10, 1], [3, 3, 1, 10], [12, 3, 1, 10], [3, 12, 10, 1], [3, 4, 10, 1]];
 
 export function desktop({ heading, note, items }) {
   return `<div class="desktop" data-desktop hidden inert>
   <div class="desktop__wall" aria-hidden="true">
-    <span class="wall__sky"></span>
-    <span class="wall__moon"></span>
-    <span class="wall__ridge wall__ridge--far"></span>
-    <span class="wall__ridge wall__ridge--near"></span>
-    <span class="wall__door"></span>
-    <span class="wall__mist"></span>
+    <img class="desktop__paper desktop__paper--dark" src="/assets/pixel/wallpaper-dark.png"
+         alt="" width="240" height="150" decoding="async">
+    <img class="desktop__paper desktop__paper--light" src="/assets/pixel/wallpaper-light.png"
+         alt="" width="240" height="150" decoding="async">
   </div>
 
   <div class="desktop__surface">
     <section class="win" data-window aria-labelledby="win-title">
       <div class="win__bar">
-        <span class="win__icon" aria-hidden="true"></span>
+        <span class="win__icon" aria-hidden="true">${pixelIcon(WINDOW_MARK)}</span>
         <h1 class="win__title" id="win-title">${esc(heading)}</h1>
-${windowButtons()}
+        <div class="win__buttons">
+          <button class="win__btn" type="button" data-window-min aria-label="Minimise this window">${pixelIcon(MINIMISE)}</button>
+          <button class="win__btn" type="button" disabled aria-label="Maximise (this window cannot be resized)">${pixelIcon(MAXIMISE)}</button>
+          <button class="win__btn win__btn--close" type="button" data-window-close aria-label="Close this window">${pixelIcon(CLOSE)}</button>
+        </div>
       </div>
 
       <div class="win__menubar" role="presentation">
@@ -61,43 +56,41 @@ ${items.map((i) => `          <li><span class="win__bullet" aria-hidden="true"><
       <div class="win__status">
         <span class="win__status-cell win__status-cell--grow">Ready</span>
         <span class="win__status-cell">1 item</span>
-        <span class="win__status-cell win__status-grip" aria-hidden="true"></span>
       </div>
     </section>
   </div>
 
   <div class="taskbar">
-    <button class="tb-start" type="button" data-start
-            aria-expanded="false" aria-controls="start-menu">
-      <span class="tb-start__glyph" aria-hidden="true"></span><span class="tb-start__word">start</span>
+    <button class="tb-start" type="button" data-start aria-expanded="false" aria-controls="start-menu">
+      <span class="tb-start__glyph" aria-hidden="true">${pixelIcon(DOORWAY)}</span>start
     </button>
     <div class="tb-tasks">
       <button class="tb-task" type="button" data-task aria-pressed="true">
-        <span class="win__icon win__icon--small" aria-hidden="true"></span>${esc(heading)}
+        <span class="tb-task__icon" aria-hidden="true">${pixelIcon(WINDOW_MARK)}</span>${esc(heading)}
       </button>
     </div>
     <div class="tb-tray">
-      <span class="tb-tray__icon" aria-hidden="true"></span>
+      ${themeToggle({ className: 'theme-toggle--tray' })}
       <span class="tb-clock" data-clock role="status" aria-label="Current time"></span>
     </div>
   </div>
 
   <div class="start-menu" id="start-menu" data-start-menu hidden>
     <div class="start-menu__head">
-      <span class="start-menu__avatar" aria-hidden="true"></span>
+      <span class="start-menu__avatar" aria-hidden="true">${pixelIcon(DOORWAY)}</span>
       <span class="start-menu__user">${esc(heading)}</span>
     </div>
     <ul class="start-menu__list">
       <li>
         <button class="start-menu__item" type="button" data-restore>
-          <span class="start-menu__icon" aria-hidden="true"></span>
+          <span class="start-menu__icon" aria-hidden="true">${pixelIcon(WINDOW_MARK)}</span>
           <span><strong>Reopen window</strong><small>Show the window again</small></span>
         </button>
       </li>
     </ul>
     <div class="start-menu__foot">
       <button class="start-menu__leave" type="button" data-leave>
-        <span class="start-menu__icon start-menu__icon--door" aria-hidden="true"></span>Back to the room
+        <span class="start-menu__icon" aria-hidden="true">${pixelIcon(DOORWAY)}</span>Back to the room
       </button>
     </div>
   </div>

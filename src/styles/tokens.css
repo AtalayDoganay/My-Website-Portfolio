@@ -1,50 +1,33 @@
-/* Design tokens. Every colour, size and duration used on the site starts here.
-   Contrast ratios against --paper are noted where text is involved; they were
-   measured, not estimated. See docs/DESIGN-NOTES.md. */
+/* ===========================================================================
+   Design tokens.
+
+   Two palettes, same keys. They mirror the palettes in tools/pixel_art.py, so the
+   CSS chrome and the drawn artwork are the same set of colours - the window
+   borders and the monitor's outline are literally the same value.
+
+   The outline colour is the hard rule of this design: pure #FFFFFF on dark, pure
+   #000000 on light, one grid unit thick everywhere.
+   ========================================================================= */
 
 :root {
-  /* --- Landscape palette ------------------------------------------------ */
-  --sky-high:     #9FC4E2;  /* top of the sky                                */
-  --sky:          #C3D9E8;  /* faded sky blue                                */
-  --haze:         #D9D3E6;  /* misty lavender, where sky meets land          */
-  --meadow:       #9FB093;  /* muted meadow green                            */
-  --meadow-deep:  #93A985;  /* nearest grass                                 */
-  --paper:        #F2F0E6;  /* soft ivory: the bottom of the sky             */
-  --paper-raised: #F8F6EF;  /* card fill, a shade lighter than the page      */
-  --door-light:   #F6E7C0;  /* the glow through the doorway                  */
-  --frame-lit:    #EEE7D7;
-  --frame-shade:  #C8C0AD;
+  /* --- the pixel grid ---------------------------------------------------
+     --px-scale is an integer set by the page script from the viewport, so the
+     artwork always lands on whole device pixels. The CSS value here is the
+     fallback used before the script runs and when it cannot run at all. */
+  --px-scale: 4;
+  --edge: 2px;          /* one grid unit of chrome, kept constant */
 
-  /* --- Ink -------------------------------------------------------------- */
-  --ink:      #26303B;  /* 11.7:1 on paper */
-  --ink-soft: #4C5A68;  /*  6.2:1 on paper */
-  /* Text over the scene needs to survive the darkest pixel the sky paints
-     (--sky-high), not the band's flat CSS background. 5.1:1 there. */
-  --ink-on-sky: #3C4855;
-  --dusk:     #42527A;  /*  6.8:1 on paper - links */
-  --focus:    #42527A;  /*  6.8:1 on paper, 5.3:1 on sky */
-
-  /* --- Edges ------------------------------------------------------------ */
-  --rule:      #CBC7B7;  /* decorative hairline                             */
-  --edge:      #8E8A79;  /* card boundary, 3.0:1 on paper (WCAG 1.4.11)     */
-
-  /* --- Type ------------------------------------------------------------- */
-  --face-display: 'Fraunces', Georgia, 'Times New Roman', serif;
-  --face-text: 'Karla', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  /* A monospace fallback keeps the terminal line from reflowing before VT323 lands. */
+  /* --- type ------------------------------------------------------------- */
+  --face-ui: 'Silkscreen', ui-monospace, 'Courier New', monospace;
   --face-crt: 'VT323', ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
+  --face-text: 'Karla', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  --step--1: 0.8125rem;  /* 13px - captions                */
-  --step-0:  1.0625rem;  /* 17px - body                    */
-  --step-1:  1.1875rem;  /* 19px - lead, project names     */
-  --step-2:  1.375rem;   /* 22px - section titles          */
-  --step-3:  clamp(1.875rem, 1.45rem + 1.9vw, 2.5rem); /* 30 - 40px */
+  --step--1: 0.6875rem;
+  --step-0: 0.875rem;
+  --step-1: 1rem;
+  --step-2: 1.25rem;
+  --step-3: clamp(1.5rem, 1.1rem + 1.8vw, 2.25rem);
 
-  --leading-tight: 1.18;
-  --leading-body: 1.65;
-  --measure: 64ch;
-
-  /* --- Space ------------------------------------------------------------ */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -52,22 +35,75 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
   --space-7: 3rem;
-  --space-8: 4.5rem;
 
-  /* --- Shape ------------------------------------------------------------ */
-  --radius-card: 10px;
-  --radius-view: 14px;
-  --radius-pill: 999px;
+  --column: 44rem;
+  --gutter: 1.25rem;
 
-  /* --- Frame ------------------------------------------------------------ */
-  --column: 42rem;      /* 672px, matching the reference's intimacy */
-  --gutter: 1.5rem;     /* 24px */
+  --tap: 120ms;
+  --ease: steps(4, end);      /* interface motion steps, like the artwork */
+  --ease-smooth: cubic-bezier(0.62, 0.02, 0.34, 1);
+}
 
-  /* --- Motion. Weather is slow; interface response is quick. ------------- */
-  --drift-near: 130s;
-  --drift-mid:  200s;
-  --drift-far:  300s;
-  --breathe:    16s;
-  --tap: 160ms;
-  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+/* ---------------------------------------------------------------- dark ---
+   Deep navy ground, WHITE outlines, cool blue and violet, restrained cyan. */
+:root,
+:root[data-theme='dark'] {
+  --outline: #ffffff;
+
+  --bg: #070a18;
+  --bg-2: #0d1228;
+  --surface-1: #2b3054;
+  --surface-2: #3d4670;
+  --surface-3: #59648f;
+  --surface-4: #7c88b8;
+  --bevel: #96a2ce;
+
+  --glass: #10173a;
+  --glass-lit: #1c2a5e;
+
+  --cyan: #7fe3f5;
+  --violet: #b49bf0;
+  --mint: #7ff5c4;
+
+  --ink: #e8ecff;         /* 14.9:1 on --bg */
+  --ink-dim: #aab4dc;     /*  8.1:1 on --bg */
+  --ink-on-surface: #f2f4ff;
+
+  /* the era's title bar, kept blue in both themes because that is its signature */
+  --title-a: #4a72d8;
+  --title-b: #2a4fb4;
+  --title-ink: #ffffff;
+
+  --shadow: rgb(0 0 0 / 0.55);
+}
+
+/* --------------------------------------------------------------- light ---
+   Pale sky ground, BLACK outlines, soft blue, lavender and mint. */
+:root[data-theme='light'] {
+  --outline: #000000;
+
+  --bg: #e7eff9;
+  --bg-2: #f4f8fd;
+  --surface-1: #93a3c4;
+  --surface-2: #b3c2de;
+  --surface-3: #d3def0;
+  --surface-4: #f2f6fc;
+  --bevel: #ffffff;
+
+  --glass: #c9d8ec;
+  --glass-lit: #e6effa;
+
+  --cyan: #286c79;      /* 5.6:1 on --bg-2, 5.2:1 on --bg */
+  --violet: #6b52a8;
+  --mint: #2f8a70;
+
+  --ink: #14182c;         /* 15.2:1 on --bg */
+  --ink-dim: #414a68;     /*  7.4:1 on --bg */
+  --ink-on-surface: #14182c;
+
+  --title-a: #4a72d8;
+  --title-b: #2a4fb4;
+  --title-ink: #ffffff;
+
+  --shadow: rgb(20 24 44 / 0.28);
 }

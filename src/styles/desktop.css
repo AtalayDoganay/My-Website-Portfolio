@@ -1,492 +1,339 @@
 /* ===========================================================================
-   The desktop behind the glass: early-2000s Windows-era construction, built
-   from this site's own palette. Saturated blue title bar, compact window
-   controls, warm-grey surfaces, beveled edges, inset fields, small system
-   type. No borrowed logo, icon set or wallpaper.
+   The desktop behind the glass.
+
+   Early-2000s Windows layout rebuilt on the pixel grid: blue title bar, compact
+   window controls, a bevelled window, Start button, taskbar. Every edge is a
+   hard one-grid-unit line in the theme's outline colour - white on dark, black
+   on light. No radii, no soft shadows, no gradients that blend: where the era
+   used a gradient, this uses two or three flat stops.
    ========================================================================= */
 
 .desktop {
-  --bar-h: 2.5rem;
-
-  /* Window chrome. The era's grey, nudged a few degrees warm. */
-  --face: #d9d5cc;
-  --face-lit: #ffffff;
-  --face-dim: #8e8a82;
-  --face-dark: #55524c;
-  --ink: #16151a;
-
-  /* The title bar: saturated blue with the era's soft top-to-bottom gradient,
-     pulled toward this site's violet so the desktop belongs to the same world. */
-  --title-a: #3f6fd8;
-  --title-b: #2a4fb4;
-  --title-c: #1d3a90;
-  --accent: #6fe3f5;
+  --bar-h: 2.75rem;
 
   position: fixed;
   inset: 0;
   z-index: 2;
   overflow: hidden;
-  font-family: var(--face-text);
-  font-size: 0.8125rem;
-  color: var(--ink);
+  font-family: var(--face-ui);
+  font-size: var(--step--1);
+  color: var(--ink-on-surface);
   opacity: 0;
-  transition: opacity 380ms ease;
+  transition: opacity 380ms var(--ease-smooth);
 }
 
 .desktop[hidden] { display: none; }
 .desktop[data-shown] { opacity: 1; }
 
-/* ------------------------------------------------------------- wallpaper */
+/* --------------------------------------------------------------- wallpaper
+   The wallpaper is pixel art too. It is scaled by a whole number and centred,
+   with the surrounding colour carrying to the edges, rather than stretched. */
 
-.desktop__wall { position: absolute; inset: 0; }
-.desktop__wall > span { position: absolute; display: block; }
-
-.wall__sky {
+.desktop__wall {
+  position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, #120f2c 0%, #1b1742 34%, #2c2059 56%,
-                              #241f47 66%, #16203a 74%, #0d1626 100%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--bg-2);
 }
 
-.wall__moon {
-  right: 12%;
-  top: 6%;
-  width: min(42vw, 30rem);
-  aspect-ratio: 1;
-  background: radial-gradient(circle at 50% 50%, #fffaf0 0%, #f6e8c6 13%, #dccca2 18.5%,
-                              rgb(255 246 222 / 0.2) 21%, rgb(255 246 222 / 0.07) 42%, transparent 68%);
+.desktop__paper {
+  width: calc(240px * var(--wall-scale, 4));
+  max-width: none;
 }
+.desktop__paper--light { display: none; }
+:root[data-theme='light'] .desktop__paper--dark { display: none; }
+:root[data-theme='light'] .desktop__paper--light { display: block; }
 
-.wall__ridge { inset-inline: -5%; }
-.wall__ridge--far {
-  top: 62%;
-  height: 14%;
-  background: linear-gradient(180deg, rgb(90 104 150 / 0.5), rgb(60 72 112 / 0.75));
-  clip-path: polygon(0 54%, 18% 40%, 34% 50%, 52% 34%, 70% 47%, 86% 38%, 100% 46%, 100% 100%, 0 100%);
-}
-.wall__ridge--near {
-  top: 70%;
-  height: 30%;
-  background: linear-gradient(180deg, #1d2b3c 0%, #101a26 100%);
-  clip-path: polygon(0 34%, 22% 25%, 42% 33%, 62% 22%, 80% 31%, 100% 26%, 100% 100%, 0 100%);
-}
-
-.wall__door {
-  left: 22%;
-  bottom: 20%;
-  width: min(2.4vw, 1.5rem);
-  height: min(5.2vw, 3.3rem);
-  border: 0.18rem solid #b9b09a;
-  border-bottom: 0;
-  border-radius: 2px 2px 0 0;
-  background: linear-gradient(180deg, #fdf6e2 0%, #edd9a8 100%);
-  opacity: 0.9;
-  filter: drop-shadow(0 0 1.4rem rgb(246 231 192 / 0.45));
-}
-
-.wall__mist {
-  inset-inline: 0;
-  top: 58%;
-  height: 22%;
-  background: linear-gradient(180deg, transparent, rgb(150 178 220 / 0.16) 55%, transparent);
-  filter: blur(18px);
-}
-
-/* ----------------------------------------------------------- the window */
+/* ------------------------------------------------------------- the window */
 
 .desktop__surface {
   position: absolute;
   inset: 0 0 var(--bar-h) 0;
   display: grid;
   place-items: center;
-  padding: 1rem;
+  padding: var(--space-4);
 }
 
 .win {
-  width: min(32rem, 94vw);
-  border: 1px solid #14265e;
-  border-radius: 7px 7px 0 0;
-  background: var(--face);
-  box-shadow: 0 1.25rem 3rem rgb(0 0 0 / 0.45);
-  overflow: hidden;
+  width: min(34rem, 92vw);
+  border: var(--edge) solid var(--outline);
+  background: var(--surface-3);
+  box-shadow: var(--edge) var(--edge) 0 var(--shadow);
 }
-
 .win[hidden] { display: none; }
 
-/* --- title bar --- */
+/* --- title bar: flat stops, not a blend --- */
 
 .win__bar {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  height: 1.85rem;
-  padding: 0 0.22rem 0 0.4rem;
-  background: linear-gradient(180deg, var(--title-a) 0%, var(--title-b) 46%, var(--title-c) 100%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
+  gap: var(--space-2);
+  padding: 0.3rem 0.3rem 0.3rem 0.4rem;
+  background: linear-gradient(180deg, var(--title-a) 0 45%, var(--title-b) 45% 100%);
+  border-bottom: var(--edge) solid var(--outline);
+  color: var(--title-ink);
 }
 
-.win__icon {
-  width: 1rem;
-  height: 1rem;
-  flex: none;
-  border: 1px solid #b9b09a;
-  border-bottom: 0;
-  border-radius: 2px 2px 0 0;
-  background: linear-gradient(180deg, #fffdf4, #f2dfae);
-}
-.win__icon--small { width: 0.8rem; height: 0.8rem; }
+.win__icon { display: grid; }
+.win__icon .px-icon { width: 1rem; height: 1rem; }
 
 .win__title {
   flex: 1;
   margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.005em;
-  color: #fff;
-  text-shadow: 0 1px 1px rgb(0 0 0 / 0.45);
+  font-size: var(--step--1);
+  color: var(--title-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.win__buttons { display: flex; gap: 0.13rem; }
+.win__buttons { display: flex; gap: 0.2rem; }
 
-/* Compact, square-ish, the proportions the era used. */
 .win__btn {
-  position: relative;
-  width: 1.32rem;
-  height: 1.32rem;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
   padding: 0;
-  border: 1px solid rgb(255 255 255 / 0.55);
-  border-radius: 3px;
-  background: linear-gradient(180deg, #6f97e8 0%, #3a63c4 100%);
+  border: var(--edge) solid var(--outline);
+  background: var(--surface-4);
+  color: var(--ink-on-surface);
   cursor: pointer;
 }
-.win__btn:hover { background: linear-gradient(180deg, #8bacef 0%, #4a74d6 100%); }
-.win__btn:active { background: linear-gradient(180deg, #2c4ea6 0%, #4a74d6 100%); }
-.win__btn:disabled { opacity: 0.45; cursor: default; }
-.win__btn:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
-
-.win__btn--close { background: linear-gradient(180deg, #e8794f 0%, #c8391c 100%); }
-.win__btn--close:hover { background: linear-gradient(180deg, #f2916b 0%, #d8492c 100%); }
-
-/* Glyphs drawn from borders, so they stay crisp at this size. */
-.win__btn span { position: absolute; inset: 0; }
-.win__btn--min span::before {
-  content: '';
-  position: absolute;
-  left: 28%; right: 28%; bottom: 26%;
-  border-bottom: 2px solid #fff;
-}
-.win__btn--max span::before {
-  content: '';
-  position: absolute;
-  inset: 28% 28% 26%;
-  border: 2px solid #fff;
-  border-top-width: 3px;
-}
-.win__btn--close span::before,
-.win__btn--close span::after {
-  content: '';
-  position: absolute;
-  left: 30%; right: 30%; top: 48%;
-  border-top: 2px solid #fff;
-}
-.win__btn--close span::before { transform: rotate(45deg); }
-.win__btn--close span::after { transform: rotate(-45deg); }
+.win__btn .px-icon { width: 0.85rem; height: 0.85rem; }
+.win__btn:hover { background: var(--bevel); }
+.win__btn:active { background: var(--surface-2); }
+.win__btn:disabled { opacity: 0.4; cursor: default; }
+.win__btn--close { background: #c8391c; color: #ffffff; }
+.win__btn--close:hover { background: #e05135; }
 
 /* --- menu bar --- */
 
 .win__menubar {
   display: flex;
-  gap: 0.15rem;
-  padding: 0.14rem 0.2rem;
-  background: var(--face);
-  border-bottom: 1px solid var(--face-dim);
-  box-shadow: inset 0 1px 0 var(--face-lit);
+  gap: 0.1rem;
+  padding: 0.25rem 0.3rem;
+  background: var(--surface-3);
+  border-bottom: var(--edge) solid var(--outline);
 }
-
-.win__menu {
-  padding: 0.1rem 0.42rem;
-  font-size: 0.75rem;
-  color: #2a2823;
-}
-.win__menu u { text-underline-offset: 0.12em; }
+.win__menu { padding: 0.1rem 0.45rem; color: var(--ink-on-surface); }
+.win__menu u { text-underline-offset: 0.15em; }
 
 /* --- body --- */
 
 .win__body {
-  padding: 0.85rem 0.9rem;
-  background: var(--face);
-  box-shadow: inset 0 1px 0 var(--face-lit);
+  padding: var(--space-4);
+  background: var(--surface-3);
+  font-family: var(--face-text);
+  font-size: var(--step-0);
 }
 
-.win__lead {
-  margin: 0 0 0.7rem;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: #2a2823;
-}
+.win__lead { margin: 0 0 var(--space-3); color: var(--ink-on-surface); }
 
 .win__list {
-  margin: 0 0 0.75rem;
+  margin: 0 0 var(--space-3);
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 0.3rem;
-  font-size: 0.78rem;
-  color: #35322c;
+  gap: var(--space-2);
+  font-size: var(--step--1);
+  font-family: var(--face-ui);
 }
-.win__list li { display: flex; align-items: center; gap: 0.45rem; }
+.win__list li { display: flex; align-items: center; gap: var(--space-2); }
 
 .win__bullet {
-  width: 0.55rem;
-  height: 0.55rem;
+  width: 0.5rem;
+  height: 0.5rem;
   flex: none;
-  border: 1px solid var(--face-dark);
-  background: linear-gradient(135deg, #fff 0%, #b9b4a8 100%);
+  border: var(--edge) solid var(--outline);
+  background: var(--surface-1);
 }
 
-/* An inset field, which is the era's other signature besides the raised bevel. */
+/* An inset field: the era's other signature besides the raised bevel. */
 .win__field {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.32rem 0.45rem;
-  border: 1px solid;
-  border-color: var(--face-dark) var(--face-lit) var(--face-lit) var(--face-dark);
-  background: #f7f5f0;
-  font-size: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.2rem var(--space-2);
+  padding: 0.4rem 0.5rem;
+  border: var(--edge) solid var(--outline);
+  background: var(--surface-4);
+  font-family: var(--face-ui);
+  font-size: var(--step--1);
 }
-.win__field-label { color: #6b675f; }
-.win__field-value { color: #2a2823; }
+.win__field-label { color: var(--ink-dim); }
 
 /* --- status bar --- */
 
 .win__status {
   display: flex;
   gap: 0.2rem;
-  padding: 0.2rem;
-  background: var(--face);
-  border-top: 1px solid var(--face-lit);
+  padding: 0.25rem;
+  background: var(--surface-3);
+  border-top: var(--edge) solid var(--outline);
 }
-
 .win__status-cell {
   padding: 0.1rem 0.4rem;
-  border: 1px solid;
-  border-color: var(--face-dim) var(--face-lit) var(--face-lit) var(--face-dim);
-  font-size: 0.72rem;
-  color: #4a4740;
+  border: var(--edge) solid var(--surface-1);
+  color: var(--ink-on-surface);
 }
 .win__status-cell--grow { flex: 1; }
 
-.win__status-grip {
-  width: 0.9rem;
-  border-color: transparent;
-  background: repeating-linear-gradient(
-    135deg, transparent 0 2px, var(--face-dim) 2px 3px, transparent 3px 5px
-  );
-}
-
-/* --------------------------------------------------------------- taskbar */
+/* ----------------------------------------------------------------- taskbar */
 
 .taskbar {
   position: absolute;
   inset: auto 0 0 0;
-  height: var(--bar-h);
+  min-height: var(--bar-h);
   display: flex;
   align-items: stretch;
-  gap: 0.3rem;
-  padding-right: 0.15rem;
-  background: linear-gradient(180deg, #4a74d6 0%, #2f56b8 8%, #24479f 52%, #2a4fae 92%, #16306f 100%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  gap: var(--space-2);
+  padding: 0.25rem;
+  padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, var(--title-a) 0 30%, var(--title-b) 30% 100%);
+  border-top: var(--edge) solid var(--outline);
 }
 
-/* The Start button: the era's rounded green tab, in this site's own green. */
 .tb-start {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0 1.05rem 0 0.7rem;
-  border: 0;
-  border-radius: 0 0.7rem 0.7rem 0;
-  background: linear-gradient(180deg, #63b34e 0%, #3f8f34 46%, #2c7327 100%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45), inset -1px 0 0 rgb(0 0 0 / 0.2);
-  color: #fff;
-  font-size: 0.9rem;
-  font-style: italic;
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 0.45);
+  gap: var(--space-2);
+  padding: 0 0.8rem;
+  border: var(--edge) solid var(--outline);
+  background: var(--mint);
+  color: #08140f;
+  font-family: var(--face-ui);
+  font-size: var(--step-0);
   cursor: pointer;
 }
-.tb-start:hover { background: linear-gradient(180deg, #74c25e 0%, #499d3c 46%, #327f2c 100%); }
-.tb-start[aria-expanded='true'] { background: linear-gradient(180deg, #2c7327 0%, #3f8f34 60%); }
-.tb-start:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+:root[data-theme='light'] .tb-start { color: #ffffff; }
+.tb-start .px-icon { width: 1rem; height: 1rem; }
+.tb-start:hover { filter: brightness(1.1); }
+.tb-start[aria-expanded='true'] { background: var(--surface-1); color: var(--ink-on-surface); }
 
-/* The Start mark is this site's lit doorway, not anybody's logo. */
-.tb-start__glyph {
-  width: 0.85rem;
-  height: 1.1rem;
-  border: 2px solid #eaf6e6;
-  border-bottom: 0;
-  border-radius: 2px 2px 0 0;
-  background: linear-gradient(180deg, #fffdf4, #f6e7c0);
-  box-shadow: 0 0 0.5rem rgb(246 231 192 / 0.7);
-}
-
-.tb-tasks { flex: 1; display: flex; align-items: center; padding: 0.22rem 0 0.22rem 0.3rem; }
+.tb-tasks { flex: 1; display: flex; align-items: stretch; min-width: 0; }
 
 .tb-task {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  max-width: 14rem;
-  height: 100%;
+  gap: var(--space-2);
+  max-width: 16rem;
+  min-width: 0;
   padding: 0 0.6rem;
-  border: 1px solid rgb(255 255 255 / 0.25);
-  border-radius: 3px;
-  background: linear-gradient(180deg, #4f7ede 0%, #2f56b8 100%);
-  color: #fff;
-  font-size: 0.76rem;
+  border: var(--edge) solid var(--outline);
+  background: var(--surface-2);
+  color: var(--ink-on-surface);
+  font-family: var(--face-ui);
+  font-size: var(--step--1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
 }
-.tb-task[aria-pressed='true'] {
-  background: linear-gradient(180deg, #23438f 0%, #3560c4 100%);
-  box-shadow: inset 1px 1px 2px rgb(0 0 0 / 0.4);
-}
-.tb-task:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+.tb-task__icon { display: grid; flex: none; }
+.tb-task .px-icon { width: 0.9rem; height: 0.9rem; }
+.tb-task[aria-pressed='true'] { background: var(--surface-1); }
 
 .tb-tray {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0.22rem 0;
-  padding: 0 0.65rem;
-  border-left: 1px solid rgb(255 255 255 / 0.22);
-  background: linear-gradient(180deg, #2c62c9 0%, #1d3f92 100%);
-  box-shadow: inset 1px 0 0 rgb(0 0 0 / 0.25);
+  gap: var(--space-2);
+  padding: 0 0.5rem;
+  border: var(--edge) solid var(--outline);
+  background: var(--surface-2);
 }
 
-.tb-tray__icon {
-  width: 0.7rem;
-  height: 0.7rem;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, var(--accent), #2a7f92);
-  box-shadow: 0 0 0.35rem rgb(111 227 245 / 0.7);
+/* The tray switch is the same control as the one in the room, sized down. */
+.theme-toggle--tray {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-width: var(--edge);
 }
+.theme-toggle--tray .px-icon { width: 1rem; height: 1rem; }
 
 .tb-clock {
-  font-size: 0.76rem;
-  color: #fff;
+  font-family: var(--face-ui);
+  font-size: var(--step--1);
+  color: var(--ink-on-surface);
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 1px 1px rgb(0 0 0 / 0.4);
 }
 
-/* ------------------------------------------------------------ start menu */
+/* -------------------------------------------------------------- start menu */
 
 .start-menu {
   position: absolute;
-  left: 0;
+  left: 0.25rem;
   bottom: var(--bar-h);
   z-index: 3;
-  width: min(17rem, 82vw);
-  border: 1px solid #16306f;
-  border-radius: 6px 6px 0 0;
-  background: #f4f2ec;
-  box-shadow: 0 -0.5rem 2rem rgb(0 0 0 / 0.45);
-  overflow: hidden;
+  width: min(18rem, 86vw);
+  border: var(--edge) solid var(--outline);
+  background: var(--surface-3);
+  box-shadow: var(--edge) calc(-1 * var(--edge)) 0 var(--shadow);
 }
-
 .start-menu[hidden] { display: none; }
 
 .start-menu__head {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.5rem 0.7rem;
-  background: linear-gradient(180deg, var(--title-a) 0%, var(--title-c) 100%);
-  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.2);
-  color: #fff;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: linear-gradient(180deg, var(--title-a) 0 45%, var(--title-b) 45% 100%);
+  border-bottom: var(--edge) solid var(--outline);
+  color: var(--title-ink);
 }
+.start-menu__avatar { display: grid; }
+.start-menu__avatar .px-icon { width: 1.4rem; height: 1.4rem; }
+.start-menu__user { font-family: var(--face-ui); }
 
-.start-menu__avatar {
-  width: 1.7rem;
-  height: 1.7rem;
-  border: 2px solid rgb(255 255 255 / 0.7);
-  border-radius: 4px;
-  background: radial-gradient(circle at 50% 40%, #f6e7c0, #9a8f6d);
-}
-
-.start-menu__user { font-weight: 700; font-size: 0.85rem; }
-
-.start-menu__list { margin: 0; padding: 0.3rem; list-style: none; }
+.start-menu__list { margin: 0; padding: 0.25rem; list-style: none; }
 
 .start-menu__item,
 .start-menu__leave {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--space-3);
   width: 100%;
-  padding: 0.5rem 0.55rem;
-  border: 0;
-  border-radius: 3px;
+  min-height: 2.75rem;
+  padding: var(--space-2);
+  border: var(--edge) solid transparent;
   background: transparent;
-  color: var(--ink);
-  font-family: var(--face-text);
-  font-size: 0.8rem;
+  color: var(--ink-on-surface);
+  font-family: var(--face-ui);
+  font-size: var(--step--1);
   text-align: left;
   cursor: pointer;
 }
-.start-menu__item strong { display: block; font-size: 0.8rem; }
-.start-menu__item small { display: block; font-size: 0.7rem; color: #6b675f; }
+.start-menu__item strong { display: block; font-weight: 400; }
+.start-menu__item small { display: block; font-size: 0.62rem; color: var(--ink-dim); }
+.start-menu__icon { display: grid; flex: none; }
+.start-menu__icon .px-icon { width: 1.1rem; height: 1.1rem; }
 
 .start-menu__item:hover,
-.start-menu__leave:hover { background: var(--title-b); color: #fff; }
-.start-menu__item:hover small { color: rgb(255 255 255 / 0.8); }
-.start-menu__item:focus-visible,
-.start-menu__leave:focus-visible { outline: 2px solid var(--title-b); outline-offset: -2px; }
-
-.start-menu__icon {
-  width: 1.1rem;
-  height: 1.1rem;
-  flex: none;
-  border: 1px solid var(--face-dark);
-  background: linear-gradient(135deg, #fff 0%, #b9b4a8 100%);
+.start-menu__leave:hover {
+  border-color: var(--outline);
+  background: var(--surface-1);
 }
-.start-menu__icon--door {
-  border: 2px solid #b9b09a;
-  border-bottom: 0;
-  border-radius: 2px 2px 0 0;
-  background: linear-gradient(180deg, #fffdf4, #f2dfae);
-}
+.start-menu__item:hover small { color: var(--ink); }
 
 .start-menu__foot {
-  padding: 0.3rem;
-  border-top: 1px solid #cfcabf;
-  background: #e7e4dc;
+  padding: 0.25rem;
+  border-top: var(--edge) solid var(--outline);
+  background: var(--surface-2);
 }
 
-/* ------------------------------------------------------------ responsive */
+/* ------------------------------------------------------------- responsive */
 
 @media (max-width: 34rem) {
-  .desktop { --bar-h: 3rem; font-size: 0.8rem; }
+  .desktop { --bar-h: 3.1rem; }
   .win { width: 94vw; }
-  .win__bar { height: 2.1rem; }
-  /* Compact styling, but the controls stay finger-sized. */
-  .win__btn { width: 1.7rem; height: 1.7rem; }
-  .tb-task { max-width: 45vw; }
-  .tb-start { padding: 0 0.9rem 0 0.6rem; }
+  .win__btn { width: 2rem; height: 2rem; }
+  .tb-task { max-width: 38vw; }
+  .tb-start { padding: 0 0.6rem; }
 }
 
 @media (max-height: 30rem) and (orientation: landscape) {
-  .desktop { --bar-h: 2.3rem; }
-  .win__body { padding: 0.55rem 0.7rem; }
+  .desktop { --bar-h: 2.5rem; }
+  .win__body { padding: var(--space-3); }
   .win__list { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .desktop { transition-duration: 160ms; }
 }

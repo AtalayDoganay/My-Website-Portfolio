@@ -27,29 +27,7 @@ function aperture(project) {
   }
   return `<figure class="view view--empty">
         <div class="view__frame">
-          <svg class="view__art" viewBox="0 0 180 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-            <defs>
-              <linearGradient id="ap-${esc(project.id)}" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0"   stop-color="#DCE4EC"/>
-                <stop offset=".55" stop-color="#E4E1EA"/>
-                <stop offset="1"   stop-color="#EFEDE4"/>
-              </linearGradient>
-              <filter id="ap-blur-${esc(project.id)}" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="13"/>
-              </filter>
-            </defs>
-            <rect width="180" height="320" fill="url(#ap-${esc(project.id)})"/>
-            <g filter="url(#ap-blur-${esc(project.id)})" fill="#FBF9F4" opacity=".75">
-              <ellipse cx="46" cy="104" rx="58" ry="17"/>
-              <ellipse cx="138" cy="150" rx="50" ry="14"/>
-              <ellipse cx="80" cy="236" rx="70" ry="20"/>
-            </g>
-            <rect x="0" y="262" width="180" height="58" fill="#B7C4AC" opacity=".55"/>
-            <g fill="none" stroke="#A9A18C" stroke-width="2.5">
-              <rect x="66" y="176" width="48" height="90"/>
-            </g>
-            <rect x="68.5" y="178.5" width="43" height="87.5" fill="#F4EFE0" opacity=".55"/>
-          </svg>
+          <span class="view__placeholder" aria-hidden="true"></span>
         </div>
         <figcaption class="view__caption">No screenshot yet</figcaption>
       </figure>`;

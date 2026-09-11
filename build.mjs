@@ -12,9 +12,7 @@ const STYLE_ORDER = [
   'tokens.css',
   'base.css',
   'typography.css',
-  'layout.css',
-  'scene.css',
-  'components.css',
+  'site.css',
   'room.css',
   'desktop.css',
 ];
@@ -50,51 +48,57 @@ async function copyDir(from, to) {
 }
 
 /**
- * The screen overlay is positioned from numbers the renderer measured, not from
- * numbers a human copied. tools/model_crt.py writes the rectangle the tube occupies
- * in the rendered image; this turns it into custom properties the stylesheet uses.
+ * The screen overlay is positioned from numbers the artwork measured, not from
+ * numbers a human copied. tools/pixel_art.py writes the rectangle the tube occupies
+ * on the pixel grid; this turns it into the custom properties the stylesheet uses.
  *
- * It also enforces the one assumption the overlay rests on: that the renderer's
- * camera was level, so the screen projects as an axis-aligned rectangle. If a future
- * camera change tilts it, the rectangle would no longer match the glass and the text
- * would sit crooked on it - so the build stops instead.
+ * The old build refused to continue unless the screen was axis-aligned, which was
+ * an assumption about one particular asset rather than a real invariant. What
+ * actually matters is that the rectangle lies inside the artwork and has a sane
+ * aspect, so that is what is checked now. A future asset drawn in perspective would
+ * carry four corners instead, and the overlay would take a matrix - the geometry is
+ * read from the asset either way.
  */
 async function sceneVariables() {
-  const meta = JSON.parse(await fs.readFile(join(SRC, 'assets', 'scene', 'crt.json'), 'utf8'));
-  const { glass, clip } = meta.screen;
+  const meta = JSON.parse(await fs.readFile(join(SRC, 'assets', 'pixel', 'pixel.json'), 'utf8'));
+  const { canvas, screen, screenFraction: f } = meta.machine;
+  const compact = meta.machineCompact;
 
-  const skew = Math.max(glass.skew_x, glass.skew_y);
-  if (skew > 0.05) {
+  const inside =
+    screen.x >= 0 && screen.y >= 0 &&
+    screen.x + screen.w <= canvas[0] && screen.y + screen.h <= canvas[1];
+  if (!inside) {
     throw new Error(
-      `The rendered screen is not axis-aligned (skew ${skew.toFixed(3)}%). The camera ` +
-        `must stay level, or the overlay needs a perspective transform instead of a rect.`,
+      `The screen rectangle (${screen.x},${screen.y} ${screen.w}x${screen.h}) falls ` +
+        `outside the ${canvas.join('x')} artwork, so the overlay would miss the glass.`,
     );
   }
+  const aspect = screen.w / screen.h;
+  if (aspect < 1.1 || aspect > 1.6) {
+    throw new Error(`The screen is ${aspect.toFixed(2)}:1, which is not a tube shape.`);
+  }
 
-  const pct = (n) => `${n.toFixed(4)}%`;
-  // Unitless fractions as well as percentages: percentages place the overlay inside
-  // the asset, fractions let a narrow layout solve "put the screen's centre here"
-  // arithmetically instead of by eye.
-  const cx = (glass.left + glass.width / 2) / 100;
-  const cy = (glass.top + glass.height / 2) / 100;
-  const aspect = meta.assetPixels[0] / meta.assetPixels[1];
-  return `/* ---------- generated from src/assets/scene/crt.json ---------- */
-/* ${meta.renderer}, ${meta.samples} samples, asset ${meta.assetPixels.join(' x ')} px */
+  const pct = (n) => `${(n * 100).toFixed(4)}%`;
+  const block = (c, r) => `  --screen-left: ${pct(r.left)};
+  --screen-top: ${pct(r.top)};
+  --screen-width: ${pct(r.width)};
+  --screen-height: ${pct(r.height)};
+  --art-width: ${c[0]};
+  --art-height: ${c[1]};`;
+
+  return `/* ---------- generated from src/assets/pixel/pixel.json ---------- */
+/* ${meta.generatedBy}
+   wide framing    ${canvas.join(' x ')}, screen ${screen.w}x${screen.h} on the grid
+   narrow framing  ${compact.canvas.join(' x ')}, screen ${compact.screen.w}x${compact.screen.h} */
 .crt {
-  --screen-left: ${pct(glass.left)};
-  --screen-top: ${pct(glass.top)};
-  --screen-width: ${pct(glass.width)};
-  --screen-height: ${pct(glass.height)};
-  /* how much of the tube the front moulding hides, as a clip on the overlay */
-  --screen-clip-top: ${pct(clip.top)};
-  --screen-clip-right: ${pct(clip.right)};
-  --screen-clip-bottom: ${pct(clip.bottom)};
-  --screen-clip-left: ${pct(clip.left)};
+${block(canvas, f)}
+}
 
-  /* the centre of the glass within the asset, and the asset's own aspect */
-  --screen-cx: ${cx.toFixed(6)};
-  --screen-cy: ${cy.toFixed(6)};
-  --crt-aspect: ${aspect.toFixed(6)};
+/* Narrow screens get their own framing, not a shrunken copy of the wide one. */
+@media (max-width: 34rem), (max-height: 26rem) {
+  .crt {
+${block(compact.canvas, compact.screenFraction)}
+  }
 }
 `;
 }

@@ -154,11 +154,16 @@ for (const good of ['https://github.com/AtalayDoganay', '/projects/', '/projects
 }
 
 // --- The real pages, exactly as they ship -----------------------------------
-// The home page is an interactive scene and loads exactly one script. Every other
-// page still ships none. What no page may ever have is inline script content or an
-// inline event handler: both are code smuggled into markup, and both would have to
-// be blessed by hash in any future Content-Security-Policy.
-const SCRIPTED_PAGES = new Set(['index']);
+// What no page may ever have is inline script content or an inline event handler:
+// both are code smuggled into markup, and both would have to be blessed by hash in
+// any future Content-Security-Policy. The theme switch is the reason this rule is
+// worth keeping - the usual no-flash trick is an inline script in the head, and this
+// site uses a blocking external file instead precisely so the rule survives.
+//
+// Every page loads /theme.js so the theme is settled before the first paint.
+// The home page additionally loads /room.js for the opening scene. Nothing else.
+const ALLOWED_SCRIPTS = { index: ['/theme.js', '/room.js'] };
+const DEFAULT_SCRIPTS = ['/theme.js'];
 
 for (const mod of ['index', 'projects', 'about', 'contact', 'not-found']) {
   const { render } = await import(`../src/pages/${mod}.js`);
@@ -166,11 +171,10 @@ for (const mod of ['index', 'projects', 'about', 'contact', 'not-found']) {
   const where = `src/pages/${mod}.js`;
 
   const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
-  if (!SCRIPTED_PAGES.has(mod) && scripts.length) {
-    fail(where, 'ships a <script> tag; only the home page is allowed one');
-  }
-  if (SCRIPTED_PAGES.has(mod) && scripts.length !== 1) {
-    fail(where, `expected exactly one <script>, found ${scripts.length}`);
+  const allowed = ALLOWED_SCRIPTS[mod] || DEFAULT_SCRIPTS;
+  const srcs = scripts.map((m) => (m[1].match(/\bsrc="([^"]*)"/i) || [])[1]);
+  if (srcs.length !== allowed.length || srcs.some((s) => !allowed.includes(s))) {
+    fail(where, `scripts ${JSON.stringify(srcs)} do not match the allowed ${JSON.stringify(allowed)}`);
   }
   for (const [, attrText, body] of scripts) {
     if (body.trim()) fail(where, `inline script body: ${body.trim().slice(0, 60)}`);

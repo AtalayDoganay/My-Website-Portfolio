@@ -52,6 +52,40 @@
   var reduceQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   var hoverQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
 
+  // --- pixel scale --------------------------------------------------------
+  // The artwork is drawn at 216x150 and must only ever be shown at a whole-number
+  // multiple, or source pixels land on fractions of device pixels and the edges
+  // crawl as the window resizes. The composition adapts by changing which whole
+  // number it uses, never by taking a fractional one.
+  var WIDE = { w: 216, h: 150 };
+  var NARROW = { w: 120, h: 126 };
+  var narrowQuery = window.matchMedia('(max-width: 34rem), (max-height: 26rem)');
+  var WALL_W = 240;
+  var WALL_H = 150;
+
+  function applyScale() {
+    var root = document.documentElement;
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var landscapePhone = vh < 520 && vw > vh;
+
+    // How much of the viewport the machine may take. Narrow screens give it more,
+    // which is what keeps the tube readable instead of merely smaller.
+    var widthShare = vw < 560 ? 1.0 : 0.95;
+    var heightShare = landscapePhone ? 0.88 : vw < 560 ? 0.7 : 0.78;
+
+    var art = narrowQuery.matches ? NARROW : WIDE;
+    var scale = Math.floor(Math.min((vw * widthShare) / art.w, (vh * heightShare) / art.h));
+    scale = Math.max(1, Math.min(scale, 12));
+    root.style.setProperty('--px-scale', String(scale));
+
+    // The wallpaper is covered rather than fitted, so it rounds up.
+    var wall = Math.ceil(Math.max(vw / WALL_W, vh / WALL_H));
+    root.style.setProperty('--wall-scale', String(Math.max(1, wall)));
+  }
+
+  applyScale();
+
   // --- The script, flattened to one frame per step ------------------------
   // Each entry is the complete line as it should read after `delay` has passed.
   // Holding the whole string (rather than appending) keeps the display exact no
@@ -369,9 +403,23 @@
 
   // A resize mid-flight would leave the zoom aimed at a rect that no longer
   // exists, so land immediately rather than sit between states.
+  var resizeTimer = null;
   window.addEventListener('resize', function () {
+    // A resize mid-flight would leave the zoom aimed at a rect that no longer
+    // exists, so land immediately rather than sit between states.
     if (state === 'entering') finishEnter();
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(applyScale, 80);
   });
+  window.addEventListener('orientationchange', function () {
+    setTimeout(applyScale, 120);
+  });
+
+  // Changing the theme must not disturb anything: it only swaps palettes and which
+  // artwork is shown. The sequence, the window state and the transition are all
+  // untouched, and this listener exists only to keep the pixel scale correct if a
+  // theme ever changes the composition's metrics.
+  document.addEventListener('themechange', applyScale);
 
   // Touch has no hover, so the invitation is always on the glass.
   function applyPointerMode() {

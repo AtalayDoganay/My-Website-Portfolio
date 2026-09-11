@@ -1,0 +1,58 @@
+{
+  "generatedBy": "tools/pixel_art.py",
+  "note": "Drawn on an integer grid from a fixed palette. Not a downscaled render.",
+  "machine": {
+    "canvas": [
+      216,
+      150
+    ],
+    "screen": {
+      "x": 82,
+      "y": 29,
+      "w": 68,
+      "h": 51
+    },
+    "screenFraction": {
+      "left": 0.37962962962962965,
+      "top": 0.19333333333333333,
+      "width": 0.3148148148148148,
+      "height": 0.34
+    },
+    "bytes": {
+      "dark": 1021,
+      "light": 1016
+    }
+  },
+  "machineCompact": {
+    "canvas": [
+      120,
+      126
+    ],
+    "screen": {
+      "x": 28,
+      "y": 17,
+      "w": 72,
+      "h": 54
+    },
+    "screenFraction": {
+      "left": 0.23333333333333334,
+      "top": 0.1349206349206349,
+      "width": 0.6,
+      "height": 0.42857142857142855
+    },
+    "bytes": {
+      "dark": 605,
+      "light": 594
+    }
+  },
+  "wallpaper": {
+    "canvas": [
+      240,
+      150
+    ],
+    "bytes": {
+      "dark": 1087,
+      "light": 1086
+    }
+  }
+}
