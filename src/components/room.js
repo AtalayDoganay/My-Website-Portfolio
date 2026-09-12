@@ -1,6 +1,6 @@
 // The opening scene: a pixel-art computer standing in a pixel room.
 //
-// The desk is drawn by tools/pixel_art.py on a 340x180 integer grid with a fixed
+// The desk is drawn by tools/pixel_art.py on a 576x330 integer grid with a fixed
 // palette - not a downscaled render and not a pixelation filter. Two images come out
 // of the same geometry code, one per theme, so they line up pixel for pixel and the
 // screen sits at identical coordinates in both. Both are in the markup and CSS shows
@@ -16,13 +16,18 @@
 //
 // The live text lives INSIDE `.crt__glass`, which has `overflow: hidden`. It is
 // therefore attached to the physical glass and clipped by it at every frame of the
-// camera move, including the first one.
+// camera move, including the first one. So do the demonstrating hand and the button.
+//
+// The BURST does not. It is a sibling of the screen rather than a child of it, so
+// nothing clips it and the marks cross the glass boundary, pass in front of the
+// moulding, and travel out into the room. It is still inside `.room__world`, so the
+// camera carries it with everything else.
 //
 // Skip, sound and the theme switch sit OUTSIDE the world, so the camera never carries
 // them.
 
 import { esc } from '../lib/html.js';
-import { themeToggle, pixelSprite, HAND_POINT_LEFT } from './pixel.js';
+import { themeToggle, pixelSprite, HAND_PRESS, HAND_ANCHOR } from './pixel.js';
 
 /** Two rows of terminal text with their own carets.
  *
@@ -41,22 +46,48 @@ const readout = () =>
     .join('') +
   `</span>`;
 
-/** The invitation: a raised button, a gloved hand demonstrating it, and a burst.
+/** The invitation's parts that belong to the SCREEN: the demonstrating hand and
+ * the button it presses.
  *
- * All of it lives INSIDE `.crt__glass`, which clips it, so the whole thing is
- * part of the physical screen rather than decoration floating over the machine.
- * Everything is sized in container units of the glass, so it holds its
- * proportions at every framing.
+ * Both live inside `.crt__glass`, which clips them, so they are part of the
+ * physical screen rather than decoration floating over the machine. They are
+ * sized in container units of the glass, so they hold their proportions at
+ * every framing.
  *
- * The button is the only interactive element: `.crt__screen` is a plain div now,
+ * The button is the only interactive element: `.crt__screen` is a plain div,
  * because a button inside a button is not valid and cannot be operated.
  */
 function invitation({ label }) {
-  // Bounded and explicit: three exclamation marks, two question marks, four
-  // stars. They all launch from the button's top edge.
+  return `<span class="invite" data-invite-layer aria-hidden="true">
+      <span class="invite__hand" data-tip-x="${HAND_ANCHOR.x / HAND_ANCHOR.w}"
+            data-tip-y="${HAND_ANCHOR.y / HAND_ANCHOR.h}">${pixelSprite(HAND_PRESS, HAND_ANCHOR)}</span>
+    </span>
+    <button class="crt__go" type="button" data-go hidden
+            aria-describedby="crt-description"><span class="crt__go-face"
+      ><span class="crt__go-label" data-go-label>${esc(label)}</span></span></button>`;
+}
+
+/** The burst, which belongs to the ROOM rather than to the screen.
+ *
+ * It is a sibling of `.crt__screen`, not a child of it, and that is the whole
+ * point: `.crt__glass` clips its contents, so anything launched from inside it
+ * can only ever pile up against the bezel. Out here nothing clips, so the marks
+ * cross the glass boundary, pass in FRONT of the moulding and carry on into the
+ * room before they fade.
+ *
+ * It is still inside `.room__world`, so the camera carries it exactly like
+ * every other physical thing, and its origin is written from the same measured
+ * variables that place the screen and the button - so it emits from where the
+ * button actually is, at any framing, rather than from a second guess at it.
+ *
+ * Bounded and explicit: three exclamation marks, three question marks, four
+ * stars. Ten pieces, no timer, and nothing takes input.
+ */
+function burst() {
   const marks = [
-    ['e', 1], ['e', 2], ['e', 3], ['q', 4], ['q', 5],
-    ['s', 6], ['s', 7], ['s', 8], ['s', 9],
+    ['e', 1], ['e', 2], ['e', 3],
+    ['q', 4], ['q', 5], ['q', 6],
+    ['s', 7], ['s', 8], ['s', 9], ['s', 10],
   ];
   const body = marks
     .map(([kind, n]) =>
@@ -64,35 +95,32 @@ function invitation({ label }) {
         ? `<i class="burst__bit burst__bit--${n} burst__star"></i>`
         : `<i class="burst__bit burst__bit--${n} burst__mark">${kind === 'e' ? '!' : '?'}</i>`)
     .join('');
-  return `<span class="invite" data-invite-layer aria-hidden="true">
-      <span class="burst">${body}</span>
-      <span class="invite__hand">${pixelSprite(HAND_POINT_LEFT, { w: 12, h: 16 })}</span>
-    </span>
-    <button class="crt__go" type="button" data-go hidden
-            aria-describedby="crt-description"><span class="crt__go-face"
-      ><span class="crt__go-label" data-go-label>${esc(label)}</span></span></button>`;
+  return `  <span class="crt__fx" data-fx aria-hidden="true">
+    <span class="burst">${body}</span>
+  </span>`;
 }
 
 export function computer({ alt, pointerLabel }) {
   return `<div class="crt" data-crt>
   <img class="crt__art crt__art--wide crt__art--dark" src="/assets/pixel/machine-dark.png"
-       alt="${esc(alt)}" width="340" height="180" decoding="async" fetchpriority="high">
+       alt="${esc(alt)}" width="576" height="330" decoding="async" fetchpriority="high">
   <img class="crt__art crt__art--wide crt__art--light" src="/assets/pixel/machine-light.png"
-       alt="" aria-hidden="true" width="340" height="180" decoding="async">
+       alt="" aria-hidden="true" width="576" height="330" decoding="async">
   <img class="crt__art crt__art--narrow crt__art--dark" src="/assets/pixel/machine-compact-dark.png"
-       alt="" aria-hidden="true" width="120" height="168" decoding="async">
+       alt="" aria-hidden="true" width="180" height="252" decoding="async">
   <img class="crt__art crt__art--narrow crt__art--light" src="/assets/pixel/machine-compact-light.png"
-       alt="" aria-hidden="true" width="120" height="168" decoding="async">
+       alt="" aria-hidden="true" width="180" height="252" decoding="async">
 
   <div class="crt__screen" data-screen>
     <span class="crt__glass">
       <span class="crt__wall" aria-hidden="true"></span>
       <span class="crt__readout" aria-hidden="true">${readout()}</span>
-${invitation({ label: pointerLabel })}
       <span class="crt__scan" aria-hidden="true"></span>
       <span class="crt__bloom" aria-hidden="true"></span>
+${invitation({ label: pointerLabel })}
     </span>
   </div>
+${burst()}
 </div>`;
 }
 

@@ -78,10 +78,13 @@ async function sceneVariables() {
     throw new Error(`The screen is ${aspect.toFixed(2)}:1, which is not a tube shape.`);
   }
 
-  // The tabletop is continued past the artwork by a CSS band, so the desk meets
-  // both window edges instead of floating with wall showing past its ends. The
-  // row structure is read from the asset; only the key-to-token map lives here,
-  // and an unknown key is a build failure rather than a silently missing stripe.
+  // The narrow framing's tabletop runs off both sides of its canvas, and a CSS
+  // band continues it to the viewport edges so the desk does not stop short
+  // with wall showing past its ends. The row structure is read from the asset;
+  // only the key-to-token map lives here, and an unknown key is a build failure
+  // rather than a silently missing stripe. The wide framing draws a finite,
+  // freestanding desk inside its own canvas and reports no plan: its band is
+  // empty, and the room shows around and beneath the desk.
   const DESK_TOKENS = {
     outline: '--outline',
     desk_top: '--desk-top',
@@ -90,6 +93,7 @@ async function sceneVariables() {
   };
   const rowPx = (n) => (n === 0 ? '0' : `calc(${n} * var(--px-scale) * 1px)`);
   const deskBand = (desk, what) => {
+    if (!desk) return { height: 0, css: 'none' };
     let at = 0;
     const stops = desk.rows.map(([n, key]) => {
       const token = DESK_TOKENS[key];
@@ -111,7 +115,7 @@ async function sceneVariables() {
 
   const wideBand = deskBand(meta.machine.desk, 'wide');
   const compactBand = deskBand(compact.desk, 'narrow');
-  const deskBlock = (desk, band) => `  --desk-band-bottom: ${desk.fromBottom};
+  const deskBlock = (desk, band) => `  --desk-band-bottom: ${desk ? desk.fromBottom : 0};
   --desk-band-height: ${band.height};
   --desk-band: ${band.css};`;
 

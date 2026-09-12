@@ -22,50 +22,98 @@ output is no longer part of the site.
 
 | File | Grid | Dark | Light |
 |---|---|---|---|
-| `machine-{theme}.png` | 340 x 180 | 2119 B | 2132 B |
-| `machine-compact-{theme}.png` | 120 x 168 | 1396 B | 1397 B |
-| `wallpaper-{theme}.png` | 240 x 150 | 1087 B | 1086 B |
+| `machine-{theme}.png` | 576 x 330 | 4853 B | 4870 B |
+| `machine-compact-{theme}.png` | 180 x 252 | 2053 B | 2052 B |
+| `wallpaper-{theme}.png` | 240 x 150 | 1083 B | 1094 B |
 
-`tools/pixel_art.py` owns the PNG writer, the canvas and the two palettes;
-`tools/pixel_art_scene.py` owns the picture. The split exists because the geometry is
-the part that gets edited, and it should not be buried under the plumbing.
+**Grid history, verified against Git and actual PNGs.** The previous wide grid was
+340×180, not 340×270. The current 510×270 increases both axes by 1.5× and pixel count
+by 2.25×. At 2×, its 1020×540 displayed rectangle matches the old 3× rectangle in
+both dimensions. The compact change was 120×168 → 180×252; 2× now displays 360×504.
+Integer scale thresholds do differ between viewports. At 844×390 the wide art is
+510×270 at 1×, and the landscape CSS preserves a 69×45 button with a 13px label.
 
-**The stand is one assembly, not stacked slabs.** Real CRT pedestals are built as a
-rocker fixed to the flat underside of the casing, seated into a recess in a broad
-pedestal whose top is a flat ring (US4575033A) - there is no thin post anywhere in one.
-An earlier version outlined each piece on all four sides, and an outline between two
-parts that are JOINED is a seam, which is exactly what the eye uses to separate them.
-Now the silhouette is a single stepped polygon, the outline runs only around the
-outside, and every internal junction is an overlap with a shadow under it.
+The refinement retains those canvases and screen rectangles. The wide keyboard gains
+depth within its canvas (32 rows, 2:1 recession); it does not stretch the PNG.
+`tools/capture_refinement.py` records native and displayed width AND height for
+both themes. See [dimensions](evidence/refinement/after/dimensions.json).
 
-**Shadows start on the object's own contact row.** `contact()` is given the row
-immediately after an object's last drawn pixel. Starting a row lower - which is what it
-used to do - left a strip of bare tabletop between every object and its shadow and made
-the whole group look like it was hovering. `cast()` draws the separate, lighter, longer
-shadow each tall object throws, stepping down and to the right, because the light is up
-and to the left for everything on this desk.
+**Third pass, 2026-09-11: the wide grid is 576×330.** The elevated viewpoint shows
+the monitor's and the tower's tops and a deep tabletop, which needed more rows, and a
+1200mm desk with both ends in frame needed more columns. At 2× it displays as
+1152×660, which fits a 1280×720 window (the page allows 96% of the width and 92% of
+the height); at 3× it is 1728×990 and fits 1920×1080. Short landscape phones stay at
+1×, exactly as before. The compact grid is still 180×252. The wide glass moved to
+185,107 and the compact glass to 18,66; both rectangles are read from `pixel.json` by
+the build. `src/scripts/room.js` and the `<img>` attributes carry the same 576×330.
 
-**Volume comes from planes, not from shading one tone.** Every object with depth is
-built the same way: a lit TOP (`case_top`), a FRONT turned toward us (`case_front`), a
-LEFT SIDE turned away (`case_side`), a bright EDGE where two planes meet toward the
-light (`case_edge`), and a dark RECESS or underside (`case_deep`). The light is up and
-to the left and it stays there. The monitor's stand is a collar, a neck and a base, each
-carrying all of those; the keycaps have a lit top and a front face and drop a shadow on
-the deck behind them; the mouse has a stepped silhouette, two lit button pads, a dark
-split running to the far edge and a dark underside.
+**Artwork source (third pass, 2026-09-11).** `tools/pixel_art.py` owns the encoder,
+canvas and palettes; `tools/pixel_art_scene.py` owns geometry. The scene is laid out
+in DESK COORDINATES - x right, y up from the tabletop, z away from the viewer, one
+unit per pixel at the front plane - as `WIDE` and `COMPACT` layout tables, and every
+object is drawn through one `View`: `(x - z/6, y0 - y - z/2)`. That is a viewer in
+front of the desk and slightly above it: depth is foreshortened to half and recedes
+up the picture, turned one pixel left per six units of depth. Front faces stay true
+rectangles; tops are visible parallelograms; left sides are thin slivers.
+
+Construction, in that space. The desk is a 522 × 250 top, 12 thick, with 14-unit
+square legs at its corners. The monitor is a bezel block (132 × 118 × 30) over a
+narrower tube housing (inset 10, 108 deep) with vents on its top; under it, a
+truncated-cone housing (radius 16 to 12, 23 tall) stands in a socket on a rounded
+88 × 96 plate, 5 thick. The housing sits behind the casing's front face, so the chin
+hides its top rows and the joint is the dark band that emerges beneath the bezel;
+the stand is one outlined layer, so nothing is separated by air. The tower is
+66 × 140 × 138. The keyboard is a 198 × 64 wedge (6 to 14 tall) whose deck carries a
+full-size ANSI layout defined in key units (`ANSI_ROWS`: Esc at 0u, F1 at 2u, F5 at
+6.5u, F9 at 11u; Tab 1.5u, Caps 1.75u, left Shift 2.25u, right Shift 2.75u,
+Backspace 2u, Enter 2.25u, 1.25u bottom modifiers and a 6.25u spacebar; navigation
+cluster and inverted-T arrows from 15.5u; keypad from 19u with tall + and Enter),
+placed with one x unit and one z unit and projected, so every row shares the same
+slope and spacing. Each cap is a lit top three rows deep over a one-row front in a
+dark well. The mouse is a height field over a pebble footprint (27 × 50, 16 high): a
+longitudinal profile that rises from the rear to the palm and stays high toward the
+nose, times a rounded cross-section with near-vertical walls; it is rasterised far
+to near, closed by its rear wall, then given the palm seam, the button division and
+the wheel. Its buttons and cable face the monitor.
+
+**Reference review.** The saved Blender study had incorrectly halved every box while
+leaving cylinders full size. `tools/study_desk.py` now scales its unit cubes to the
+declared dimensions, and the installed Blender 5.1.1 rendered the corrected study
+without installation changes. This is a proportion aid; no render ships.
+
+The redraw also used direct visual inspection of an
+[IBM Model M photograph](https://commons.wikimedia.org/wiki/File:IBM_Model_M_keyboard_(US_layout_with_101_keys).jpg),
+a [Philips tilt/swivel pedestal](https://www.amibay.com/threads/philips-cm8833-ii-crt-monitor-tilt-pedestal-swivel-stand-only.106643/),
+and an [IntelliMouse side photograph](https://www.ebay.com/itm/305264798429).
+These informed construction, key grouping and shell volume; they are not copied or
+traced into assets. Local reference downloads and study renders remain in `artifacts/`.
+Existing skill/provenance records were preserved.
+
+The second pass (2026-09-11) worked from four references Atalay supplied and which
+are not stored in this repository: a photograph of a beige CRT, tower, keyboard and
+mouse (equipment proportions, keyboard key groups, mouse-to-keyboard scale); a dark
+pixel-art setup on a blue mousepad (clear silhouettes at low resolution, consistent
+projection); a beige pixel-art tower and monitor (warm plastic colour variation,
+economical shading); and a low-poly 3D CRT on a plain desk (the deep casing and the
+compact rounded support tucked beneath it, and how equipment rests on a tabletop).
+Nothing from them ships: no logo, wallpaper, screen text, watermark, plant or
+terminal styling, and no pixels were copied. The Blender study in
+`tools/study_desk.py` was inspected and not extended - its support is modelled as
+three stacked cylinders and a box, which is the stacked construction this pass moved
+away from, and the 3D reference gave the concrete target directly.
 
 **The equipment is beige; the desk is lavender; the room is navy.** Three materials,
 three palettes. That separation is load-bearing rather than decorative: a machine's lit
 top face and the tabletop were once the same value, and anything lying flat on the desk
 - the mouse, the keycaps - vanished into it with only its outline left.
 
-**One projection, and contact points.** Depth runs back and to the LEFT on a 2:1 step,
-for the desk, the monitor, the tower, the keyboard and the mouse alike. Every object is
-placed by its CONTACT POINT — the y where its base meets the tabletop — and the tabletop
-runs from y=102 at the back to y=138 at the front, so those numbers are positions within
-a real surface rather than guesses. Front to back on the wide grid: 108 tower, 114
-monitor base, 120 the keyboard's back edge, 134 the mouse. Each object has a two-row
-contact shadow directly beneath it, hard-edged like everything else here.
+**One projection, and contact points.** Every object has a footprint on the tabletop
+plane in desk space, and its contact shadow is drawn under its front edge on that
+plane before the object is. Front to back in the wide layout: the keyboard from
+z=6 to 70, the mouse from 14 to 64, the monitor's plate from 108 (its bezel block
+from 102) and the tower from 108, on a tabletop that is 250 deep. Nothing floats:
+the plate rests on the desk, the housing on the plate, the casing on the housing,
+and the legs hang from the underside of the top.
 
 Both cables start *underneath* the object they belong to and end *inside* the tower's
 front face, so each emerges from behind one and disappears behind the other rather than
@@ -79,20 +127,24 @@ keycaps — which lie flat on the desk — would vanish into it with only their 
 left. `desk_top`, `desk_front`, `desk_side` and `desk_edge` are separate palette entries,
 mirrored in `src/styles/tokens.css`.
 
-**The desk leaves the frame on three sides.** It runs off both sides, and its legs run
-off the bottom, because the page bottom-aligns the artwork. A visible end would have to
-be a parallelogram as wide as the depth step, which at this scale reads as a ramp rather
-than as furniture. Since the artwork is centred and narrower than the window, the page
-continues the tabletop's rows out to both edges with a CSS band — see below.
+**The wide desk is a piece of furniture; the narrow desk is a horizon.** In the
+wide framing the desk is a finite rectangular table drawn inside the canvas: a front
+edge from x=140 to x=500, the 2:1 step back to a back edge at y=150, a left end
+whose thickness shows as a parallelogram on the same step, and four straight square
+legs (a front face and a darker left face each). The two back legs are drawn first
+and the tabletop over them, so the back-left leg appears below the end face and the
+back-right one emerges from under the front edge, which is the overlap a real table
+shows from this angle. The legs run off the bottom of the frame because the page
+bottom-aligns the artwork; the room stays visible around and beneath the top, and
+the page paints no band beside it. The narrow framing keeps a tabletop that runs
+off both sides of its canvas - a phone cannot hold a desk with ends and a readable
+monitor at once - and the page continues those rows to the viewport edges with the
+CSS band described below.
 
-**Two framings, not one scaled down.** Raster pixel art is only ever shown at a
-whole-number multiple, so the canvas WIDTH decides the scale a phone can reach. 120
-divides 360 exactly and fits three times into 390, 412 and 430, so every common phone
-lands on 3x; a wider canvas drops to 2x on the same screens and the tube comes out
-*smaller in real pixels* despite being bigger on the grid. The narrow framing is
-therefore a different composition, not a smaller one: a much larger monitor, the tower
-showing the part of itself the monitor does not hide, and the keyboard and mouse
-tightened in front of them.
+**Two framings.** The 180×252 compact composition displays at 360×504 on the tested
+360–430px phones. Its larger monitor and tightly grouped equipment retain readable
+controls. The wide 576×330 composition includes the full keyboard groups. Both use
+whole-number scaling at rest, with fractional scaling during camera motion.
 
 **Two themes, one geometry.** The dark and light variants run the same drawing code
 with different palettes. That is verified rather than asserted: the two images have
@@ -140,69 +192,69 @@ the screen. So the push-in is capped by the longest line's reach from the middle
 glass - measured, not guessed - and the line wins. On a phone that lands at about 2.1x;
 on a laptop the cover scale is already the smaller of the two and nothing changes.
 
-**One timer.** Each step of the introduction schedules the next, so there is never a
-second one behind it and a backgrounded tab cannot build a queue - and if the opening
-outlives its whole budget while hidden, it resolves to the finished room. The invitation
-is a CSS animation on a container: no timer, nothing accumulating, and stopping it is one
-attribute. Every duration is in `TUNING` in `src/scripts/room.js`, and the reveal and
-handover are published to CSS as custom properties so the transition and the timer that
-ends it cannot drift apart.
+**Introduction.** One chained timer owns the empty 650ms hold, dots at 650/1050/1450ms,
+individual deletions at 1850/1970/2090ms, then the welcome and name. Each removal plays
+one 38ms backspace through the existing master. Typing, return-key and dot sounds retain
+their envelopes. The 1500ms pullback is unchanged. Ideal duration is 6952ms before
+font/timer overhead; the stale-intro budget adds 4000ms.
 
-**It does not replay.** Completing or skipping the introduction records it in
-`sessionStorage`, so moving between pages and back, or returning from the desktop, gets
-the finished room. A new tab is a new session and sees it again.
+**Invitation.** A 22×24 glove has a short index beside three curled fingers, a thumb,
+palm and cuff. `HAND_ANCHOR` exports fingertip (7.5,24), and the markup supplies its
+normalised coordinates to CSS. Only vertical translation animates. At maximum lift,
+the entire glove fits the tested phone glass. Scanlines remain below glove and button.
 
-**The finished monitor holds a real button.** The introduction is spoken once, during
-the opening; it clears part way through the pullback and a `<button>` takes the glass,
-centred horizontally and on 65% of the glass height. `.crt__screen` is a plain div, so
-there is no button inside a button. The key has a top face on a lower edge and travels
-down onto its own base when pressed.
+CSS owns the two-second cycle. A cancellable animation-frame observer reads contact
+from the hand keyframes (31%, 620ms) and visible flight from the particle keyframes
+(37%, 740ms). A quiet 24ms filtered-noise click and a soft 210ms whoosh pass through
+the existing master and active-voice cancellation. No repeating audio timer is added.
+Missed cues are dropped instead of queued.
 
-**The invitation is one CSS cycle.** A gloved hand above and right of the button points
-down-left at it, on a 2000ms loop with named phases: anticipation, dip, contact, burst,
-release, rest. It costs no timer and nothing accumulates, so stopping it is a single
-attribute. The fingertip lands ON the button's top face; `tools/check_room.py` measures
-that from the hand's and the button's live rects rather than trusting an offset. The
-hand's proportions come from Kenney's CC0 Cursor Pixel Pack (tiles 0134-0137): a short
-thick finger against a chunky palm, and a read that comes from the silhouette and its
-outline. Nothing is copied - those cursors are flat white, and this one is drawn in our
-own palette with a cuff, folded fingers and deliberate highlight and shadow pixels.
+Ten colourful pieces (three exclamation marks, three question marks, four stars)
+launch from the existing external `.crt__fx` layer, fanned apart before appearing.
+They cross the glass and bezel into the room. A real activation fires once, or finishes
+the current burst when the demonstration is already holding the key. The current
+iteration is normalised before limiting it to one, preventing later-cycle disappearance.
+Entry, mute, hidden-page events and teardown stop repeating effects.
 
-**The burst belongs to the button.** Nine pieces - three exclamation marks, two question
-marks, four stars - launch from the button's top edge, arc outward, rotate in stepped
-frames and fade over about 700ms, well clear of the next cycle. Travel is in container
-units of the glass, so it scales with the screen instead of being clipped; the checks
-confirm zero pieces leave the glass at every size. A real activation fires the same
-burst once and leaves it up while the camera starts moving, rather than deleting it on
-the triggering frame.
+**Replay and return.** The automatic introduction remains silent. “Play intro with
+sound” unlocks asynchronously and deliberately replays it. Mute leaves a static usable
+invitation. Session refresh skips completed introductions. Returning from the desktop
+restores the invitation without replaying; reduced motion keeps a static glove/button
+with no demonstration sounds or particles.
 
-**Audio never gates it.** The introduction always runs silently. The sound control
-creates and resumes the AudioContext on a real click; beeps are played by the step that
-is happening now or not at all, so nothing is ever queued or replayed.
+**Verification and limits.** See the [refinement review](evidence/refinement/REVIEW.md).
+`tools/check_audio.py` taps the master output, records it, and compares signal peaks
+with measured fingertip contact and particle visibility. CDP video is muxed to that
+audio using browser timestamps. This verifies digital output, not speakers, headphones
+or a listening judgement. No perceptual listening pass was performed in this session.
 
 ## How the live text is aligned
 
-The monitor is drawn in an oblique projection whose depth runs back and to the LEFT,
-which turns it to face slightly right: you see its left casing. The front face — and so
-the tube — stays a true rectangle on the grid. That is deliberate: a sheared or
-keystoned screen would resample the live text off the pixel grid and give it exactly
-the uneven pixel widths this direction exists to avoid.
+The monitor is drawn in an oblique projection whose depth recedes up the picture and
+slightly to the left, which shows its top casing and a sliver of its left side. The
+front face — and so the tube — stays a true rectangle on the grid. That is deliberate:
+a sheared or keystoned screen would resample the live text off the pixel grid and give
+it exactly the uneven pixel widths this direction exists to avoid. Changing the
+viewpoint therefore changed the rectangle's position, which the build reads from
+`pixel.json`, and nothing about how the overlay is mapped.
 
 `tools/pixel_art.py` writes the tube's rectangle to `src/assets/pixel/pixel.json`, and
 `build.mjs` turns it into the CSS custom properties the overlay uses — for both
 framings — so no coordinate is ever copied by hand. The build refuses to continue if
 the rectangle falls outside the artwork or stops being a tube shape.
 
-## How the desk reaches the window edges
+## How the narrow desk reaches the window edges
 
-The artwork is centred and is narrower than the window, so on its own the desk would
-stop short of both sides with wall showing past its ends. `tools/pixel_art_scene.py`
-therefore reports the tabletop's structure row by row — `desk.rows` in `pixel.json`,
-a list of `[count, palette key]` — along with how far its underside sits above the
-canvas bottom. `build.mjs` turns that into `--desk-band`, a hard-stop
-`linear-gradient` whose stops are multiples of `--px-scale`, and refuses to build if a
-row uses a palette key that has no CSS token. `.room__desk` paints it full width at the
-bottom of the viewport.
+The compact artwork is centred and is narrower than the phone's window, so on its own
+its desk would stop short of both sides with wall showing past its ends.
+`tools/pixel_art_scene.py` therefore reports that tabletop's structure row by row —
+`machineCompact.desk.rows` in `pixel.json`, a list of `[count, palette key]` — along
+with how far its underside sits above the canvas bottom. `build.mjs` turns that into
+`--desk-band`, a hard-stop `linear-gradient` whose stops are multiples of
+`--px-scale`, and refuses to build if a row uses a palette key that has no CSS token.
+`.room__desk` paints it full width at the bottom of the viewport. The wide framing
+reports `null` for its desk, and the build emits an empty band (`none`, height 0) for
+it: the finite desk needs no continuation.
 
 So the band is the same rows the artwork draws, at the same scale, and the two meet with
 no seam. Bottom-aligning the scene is what lets those offsets be measured from the

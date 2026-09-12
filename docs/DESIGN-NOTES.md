@@ -1,5 +1,66 @@
 # Design notes
 
+## Artwork and sound refinement — 2026-09-11
+
+The current implementation and review evidence are documented in
+[the refinement report](evidence/refinement/REVIEW.md). It includes same-scale
+before/after crops, the isolated glove, deletion frames, and a recorded journey.
+The existing uncommitted implementation was the starting point: its camera,
+replay/unlock, session skipping, external effects layer and responsive controls
+were retained.
+
+The glove now has a short index on the thumb side of the palm, three folded
+fingers beside it, and an explicit `(7.5, 24)` fingertip anchor on a `22×24` grid.
+Its cream fabric, shaded folds and violet cuff distinguish it from bare skin.
+Only vertical translation animates. The whole raised silhouette fits the glass
+in both themes at all seven tested viewport sizes.
+
+**Viewpoint, revised 2026-09-11 (third pass).** The scene is now laid out in desk
+coordinates and drawn through one projection: the viewer stands in front of the desk
+and slightly above it, depth is foreshortened to half and recedes up the picture,
+with a modest turn of one pixel left per six units of depth. The keyboard's layout,
+the mouse's top and side, the monitor's top casing and the base under it are all
+visible; nothing is sheared on the old 2:1 line. The mouse points at the monitor,
+palm nearest, buttons and cable at the far end. The monitor is a bezel block over a
+narrower tube housing, standing on a tilt/swivel housing that emerges from under the
+chin as a dark joint and seats in a socket on a low rounded plate. The keyboard is a
+full ANSI layout in key units projected onto its deck: function row, staggered rows,
+Backspace, Enter and Shift widths, spacebar, navigation cluster, inverted-T arrows
+and a keypad with tall keys. The wide canvas is 576×330 (2× fits 1280×720, 3× fits
+1920×1080); the glass stays a true rectangle, so the live screen mapping needed no
+new transform, only the regenerated rectangle. The second-pass note below describes
+the previous state.
+
+**Equipment, revised 2026-09-11 (second pass).** The CRT support is a compact
+tilt/swivel assembly: a dark joint under the casing, a short curved housing that
+bellies out and seats in a shaded socket, and a low rounded plate with a visible
+top and front edge meeting the desk. The casing is four rows deeper below the chin
+so the support stays short; the glass rectangle did not move. The mouse lies
+sideways in a low three-quarter view - nose and cable to the left toward the tower,
+rounded rear to the right, a continuous shell with two button surfaces split along
+the crest, a wheel near the nose and one seam before the palm. Keycaps are flat
+lit tops stepped one pixel on the 2:1 line over a one-row front, in dark wells
+with clear gaps; the recession is carried by the rows, not by skewing each cap.
+The wide desk is a finite freestanding table with both ends in frame, a visible
+end thickness and four straight legs (the back pair overlapped by the top); the
+narrow framing keeps a tabletop that runs past the phone's edges. Equipment and
+room palettes are retained.
+
+The dots appear at 650/1050/1450 ms, then disappear individually at
+1850/1970/2090 ms. Each deletion has a 38 ms backspace sound. Typing follows at
+2132 ms; the 1500 ms pullback is unchanged. The ideal complete opening is 6952 ms,
+and the stale-intro cutoff is 10952 ms, allowing 4000 ms for scheduling delays.
+
+CSS remains the invitation's visual clock. JavaScript reads its contact and first
+visible particle keyframes: normally 620 and 740 ms into a 2000 ms cycle. A 24 ms
+filtered click sounds at contact; a soft 210 ms filtered whoosh sounds at visible
+flight. Both pass through the existing master and cancellation path. Accepting a
+demonstrated press finishes its existing burst once. Mute, hidden-page events and
+pagehide stop repeating effects; return restores the invitation without an intro.
+
+The following sections retain the project's design history; descriptions of the
+earlier Blender/meadow versions are historical, not the current asset pipeline.
+
 ## Pixel art, in two themes (2026-09-10, current direction)
 
 The site is pixel art throughout: the computer, the keyboard, the room, the desktop
@@ -12,11 +73,11 @@ thick, on every outlined object. Both palettes live in `src/styles/tokens.css` a
 mirror the generator's palettes exactly, so a window border and the monitor's outline
 are literally the same value.
 
-**Whole-number scaling only.** Raster art is never shown at a fractional multiple; the
+**Whole-number scaling at rest.** The camera can pass through fractional scales; the
 scale is picked from the viewport by `src/scripts/room.js` and rechecked on resize.
-Narrow and short screens get a *different composition* rather than a smaller copy - the
-monitor alone on a smaller canvas - because shrinking the wide framing left the tube
-unreadable.
+Narrow and short screens get a *different composition* rather than a smaller copy:
+the compact framing brings the monitor forward and regroups the tower, keyboard and
+mouse around it, because shrinking the wide framing left the tube unreadable.
 
 **The monitor faces right by drawing, not by transform.** Its oblique depth runs back
 and to the left, so you see its left casing; the front face stays a true rectangle on
@@ -178,15 +239,45 @@ Motion here is **weather**, not interface decoration.
 - That is all on the inner pages: nothing animates on scroll, nothing fades in per
   section, there is no cursor effect.
 
-The home page is the exception, and deliberately so. It opens inside the display, prints
-two lines, and then ONE camera - a single transform on the scene's common parent - pulls
-back through the whole room until the desk, tower, keyboard, mouse and cables have all
-arrived around the monitor. It then invites a click with a gloved pixel hand and a short
-colourful burst on a two-second cycle with a quiet pause. Optional retro beeps are
-off until someone turns them on. Under `prefers-reduced-motion: reduce` the introduction
-is presented complete with no character animation, the room is revealed with a brief
-fade, and the hand stands still beside a plain Click/Tap label with no burst and no
-brightness pulse.
+The home page is the exception, and deliberately so. It opens inside the display on a
+lit but EMPTY tube, holds for 650ms, then puts up three dots 400ms apart - one beep
+each - removes them at 1850/1970/2090ms and prints two lines. Then ONE camera - a single transform
+on the scene's common parent - pulls back through the whole room until the desk, tower,
+keyboard, mouse and cables have all arrived around the monitor.
+
+It then invites a press on a two-second cycle with a quiet pause. Three decisions there
+are worth writing down, because each replaced something that read wrongly:
+
+- **The hand presses straight down, and nothing else.** Its shape says so - an upright
+  palm, a level cuff, one vertical index finger - and so does its movement: the sprite
+  has its fingertip anchored on the button's centre line in CSS, and only `translateY` is ever
+  animated. There is no horizontal term in the cycle to drift, and no rotation.
+  `tools/check_room.py` samples the whole cycle and asserts the drift is zero rather
+  than checking the two ends, since a sideways excursion that returns to centre would
+  pass a two-point check and still look like a swipe.
+- **The burst leaves the screen.** It used to live inside `.crt__glass`, which sets
+  `overflow: hidden`, so it could only ever pile up against the bezel. It is now a
+  sibling of the screen - still inside the moving scene, so the camera carries it, but
+  clipped by nothing - and its origin is written from the same measured variables that
+  place the screen and the button. The marks cross the glass, pass in front of the
+  moulding and travel out into the room before fading.
+- **Scanlines are for the tube, not for objects on it.** They sit below the hand and the
+  button now. A dark stripe every other row is wide enough at this scale to cut a small
+  sprite and an eight-pixel label into unreadable bands, which is what it was doing.
+
+**Sound is offered, never taken.** A browser will not let a page make a noise before
+someone has interacted with it, and no delay gets around that - a context created without
+a gesture is born suspended and stays there, so every beep the old code "played" during
+the opening was scheduled onto a context that was not running. The opening therefore
+always plays SILENTLY, and a clearly labelled *Play intro with sound* control replays it
+from its initial hold so the three beeps can actually be heard. That is a deliberate
+replay on request; a refresh still skips the completed intro. `tools/check_audio.py`
+measures the signal reaching `ctx.destination` rather than counting scheduled notes, and
+leaves a recording of what came out.
+
+Under `prefers-reduced-motion: reduce` the introduction is presented complete with no
+character animation, the room is revealed with a brief fade, and the hand stands still
+ON the key beside a plain Click/Tap label, with no burst and no brightness pulse.
 
 Under `prefers-reduced-motion: reduce` every animation stops and the static frame is the
 composition — it was designed to be looked at still. Cross-document view transitions are

@@ -83,5 +83,23 @@
         "SKILL.md": "2dd51f19a7fcabe1c06caee9e61554485696d05003396c528237aba970a959ce"
       }
     }
+  },
+  "assessed": {
+    "note": "Skills EVALUATED for this project and NOT installed. Recorded so the same question is not re-opened from scratch, and so the reason is auditable. Nothing here has been copied into .claude/skills/.",
+    "blender-direct-surface-modeling": {
+      "origin": "https://github.com/XliuXjianX/blender-production-skills",
+      "upstreamPath": "blender-direct-surface-modeling/SKILL.md",
+      "assessedAt": "2026-09-11",
+      "assessedAgainst": "the desk-equipment redraw: CRT stand, keyboard, mouse",
+      "decision": "not adopted",
+      "license": "NONE FOUND",
+      "reasons": [
+        "No LICENSE file and no licence statement anywhere in the repository. Under default copyright that means all rights reserved, so the files cannot be copied into this repo. This is on its own decisive: every other entry in this manifest records an explicit licence and carries the licence file alongside the copy.",
+        "It targets Blender 5.2 LTS. The installed Blender is 5.1.1, so it is written against a version that is not present here.",
+        "It is written for Codex and 'the official Blender MCP', neither of which is part of this project's toolchain.",
+        "Installing it would also break the provenance contract in CLAUDE.md: .claude/skills/ holds copies owned by the claude-web-toolkit installer or recorded in this file with a licence, and this could be neither."
+      ],
+      "whatWasUsedInstead": "Its publicly documented METHOD, which is standard modelling practice and not copyrightable expression: resolve primary form - dimensions, silhouette, mass - before any detail, classify how parts connect, and validate across multiple views. That ordering is what tools/study_desk.py follows and what the redraw of the stand, keyboard and mouse was built on. No file, prompt or wording from the repository was copied."
+    }
   }
 }

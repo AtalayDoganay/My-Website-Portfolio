@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atalay Doganay — equipment artwork review</title>
+<style>
+  * { box-sizing:border-box }
+  body { margin:32px; background:#10152b; color:#e9edf5; font:16px/1.6 system-ui,sans-serif }
+  h1 { font-size:28px; font-weight:600 } h2 { margin-top:48px; font-size:22px }
+  p { max-width:850px } a { color:#b5def9 } figure { margin:0 }
+  figcaption { padding:12px 0 8px; color:#bac7de }
+  .scroll { overflow:auto; padding-bottom:16px }
+  .comparison { display:grid; grid-template-columns:max-content max-content; gap:24px; width:max-content; padding:16px; background:#10152b }
+  .comparison img, .zoom img { display:block; image-rendering:pixelated }
+  .zoom img { width:calc(var(--w) * 2px) }
+  .row { display:flex; flex-wrap:wrap; gap:24px; align-items:start }
+  .page img { width:720px; max-width:100%; height:auto; display:block }
+  .layouts img { width:390px; max-width:100%; height:auto }
+  details { margin:24px 0 } summary { cursor:pointer; font-size:19px }
+</style>
+<h1>Equipment artwork refinement</h1>
+<p><a href="REVIEW.md">What changed, what was checked, and the limits</a> ·
+<a href="http://127.0.0.1:4321/">Open local preview</a></p>
+<p>Captures from the working site with the invitation effects hidden. Before and after
+use identical viewports, the same 2× display scale and the same crop rectangles in
+artwork pixels; nothing is stretched. Close-ups are shown at a further 2× with
+nearest-neighbour scaling, so one artwork pixel is a 4×4 block.</p>
+
+<h2>The complete desk — dark</h2>
+<div class="scroll"><div class="comparison" id="desk-dark">
+  <figure><figcaption>Before · wall-to-wall platform</figcaption><img src="before/desk-dark.png" alt="Before: the desk runs off both sides of the artwork"></figure>
+  <figure><figcaption>After · freestanding desk with ends and legs</figcaption><img src="after/desk-dark.png" alt="After: a finite desk with a visible left end, front thickness and four straight legs"></figure>
+</div></div>
+
+<h2>The complete desk — light</h2>
+<div class="scroll"><div class="comparison" id="desk-light">
+  <figure><figcaption>Before</figcaption><img src="before/desk-light.png" alt="Before, light theme"></figure>
+  <figure><figcaption>After</figcaption><img src="after/desk-light.png" alt="After, light theme"></figure>
+</div></div>
+
+<h2>Close-ups · 4× artwork pixels</h2>
+<div class="row zoom" style="--w:280">
+  <figure><figcaption>Mouse before · dark</figcaption><img src="before/mouse-dark.png" alt="Before: a large oval mouse with an upright patch"></figure>
+  <figure><figcaption>Mouse after · sideways, nose and cable to the left</figcaption><img src="after/mouse-dark.png" alt="After: a low three-quarter side view of the mouse, nose left, rounded rear right"></figure>
+  <figure><figcaption>Mouse before · light</figcaption><img src="before/mouse-light.png" alt="Before, light"></figure>
+  <figure><figcaption>Mouse after · light</figcaption><img src="after/mouse-light.png" alt="After, light"></figure>
+</div>
+<div class="row zoom" style="--w:340">
+  <figure><figcaption>Support before · dark</figcaption><img src="before/support-dark.png" alt="Before: a pinched neck on a broad plate"></figure>
+  <figure><figcaption>Support after · joint, curved housing, low plate</figcaption><img src="after/support-dark.png" alt="After: a compact tilt/swivel housing seated in a low rounded plate under the casing"></figure>
+  <figure><figcaption>Support before · light</figcaption><img src="before/support-light.png" alt="Before, light"></figure>
+  <figure><figcaption>Support after · light</figcaption><img src="after/support-light.png" alt="After, light"></figure>
+</div>
+<div class="row zoom" style="--w:600">
+  <figure><figcaption>Keyboard before · dark</figcaption><img src="before/keyboard-dark.png" alt="Before: skewed caps reading as diagonal scratches"></figure>
+  <figure><figcaption>Keyboard after · flat lit caps in dark wells</figcaption><img src="after/keyboard-dark.png" alt="After: distinct key tops with clear gaps, staggered rows, spacebar, modifiers and separate groups"></figure>
+</div>
+
+<h2>On the page · 1440×900</h2>
+<div class="row page">
+  <figure><figcaption>Before · dark</figcaption><img src="before/equipment-desktop-dark.png" alt="Before: the page with the desk running to both window edges"></figure>
+  <figure><figcaption>After · dark</figcaption><img src="after/equipment-desktop-dark.png" alt="After: the page with a freestanding desk and the room visible around it"></figure>
+  <figure><figcaption>Before · light</figcaption><img src="before/equipment-desktop-light.png" alt="Before, light"></figure>
+  <figure><figcaption>After · light</figcaption><img src="after/equipment-desktop-light.png" alt="After, light"></figure>
+</div>
+
+<h2>Phone · 390×844, touch</h2>
+<p>The narrow framing keeps a tabletop that runs past the viewport's edges: a phone
+cannot hold a desk with ends and a readable monitor at once. The support and the
+sideways mouse are redrawn at the compact scale.</p>
+<div class="row layouts">
+  <figure><figcaption>Before · dark</figcaption><img src="before/equipment-phone-dark.png" alt="Phone before, dark"></figure>
+  <figure><figcaption>After · dark</figcaption><img src="after/equipment-phone-dark.png" alt="Phone after, dark"></figure>
+  <figure><figcaption>Before · light</figcaption><img src="before/equipment-phone-light.png" alt="Phone before, light"></figure>
+  <figure><figcaption>After · light</figcaption><img src="after/equipment-phone-light.png" alt="Phone after, light"></figure>
+</div>
+<div class="row zoom" style="--w:136">
+  <figure><figcaption>Phone mouse before</figcaption><img src="before/mouse-phone-dark.png" alt="Compact mouse before"></figure>
+  <figure><figcaption>Phone mouse after</figcaption><img src="after/mouse-phone-dark.png" alt="Compact mouse after"></figure>
+</div>
+<div class="row zoom" style="--w:280">
+  <figure><figcaption>Phone support before</figcaption><img src="before/support-phone-dark.png" alt="Compact support before"></figure>
+  <figure><figcaption>Phone support after</figcaption><img src="after/support-phone-dark.png" alt="Compact support after"></figure>
+</div>
+
+<h2>Invitation still in place</h2>
+<div class="row layouts">
+  <figure><figcaption>Desktop · glove and button · dark</figcaption><img src="after/hand-monitor-desktop-dark.png" alt="The glove pressing the button on the dark monitor"></figure>
+  <figure><figcaption>Phone · dark</figcaption><img src="after/phone-dark.png" alt="Phone invitation, dark"></figure>
+  <figure><figcaption>Phone · light</figcaption><img src="after/phone-light.png" alt="Phone invitation, light"></figure>
+</div>
+<details><summary>Landscape phone · 844×390</summary>
+  <img src="after/landscape-dark.png" width="844" alt="Landscape phone after, dark">
+  <img src="after/landscape-light.png" width="844" alt="Landscape phone after, light">
+</details>
+<p>Local review evidence only. Work remains uncommitted and is not deployed.</p>
+</html>

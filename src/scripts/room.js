@@ -20,19 +20,19 @@
    frame - including the first one, when the camera is pushed all the way in.
 
    Six explicit states live on [data-room]:
-     boot              - the tube is waiting; "Wait", then the dots
+     boot              - empty hold, three dots, three individual backspaces
      typing            - the two lines are printing, character by character
      revealing-room    - the camera is pulling back
-     room-ready        - the room is up, the introduction stands, the hand waves
+     room-ready        - the room is up; a glove demonstrates a vertical press
      entering-desktop  - the camera is pushing in; input is ignored
      desktop           - the room is out of the way and the desktop has it
 
    ONE timer drives the introduction. Each step schedules the next, so there is
    never a second one behind it and a backgrounded tab cannot build a queue. The
-   invitation is a CSS cycle on a container: no timer, nothing accumulating, and
-   stopping it is one attribute.
+   invitation uses CSS animations. A cancellable rAF observes their playhead
+   for sound cues; it never schedules a separate repeating audio clock.
 
-   Every duration is in TUNING.
+   Intro/camera durations are in TUNING. Invitation phases live in CSS keyframes.
    ========================================================================= */
 
 (function () {
@@ -40,8 +40,10 @@
 
   // --- Tunable ------------------------------------------------------------
   var TUNING = {
+    bootHoldMs: 650, //  the lit tube alone, no text, before the first dot
     bootDotMs: 400, //  between each of the three dots
-    bootHoldMs: 400, //  after the third dot, before typing starts
+    bootClearMs: 400, //  the third dot's hold, before the first backspace
+    backspaceMs: 120, //  between individual dot removals
     typeMs: 42, //  per character
     lineHoldMs: 240, //  after the first line is complete
     newlineMs: 290, //  the carriage return onto the second line
@@ -54,6 +56,7 @@
     enterMs: 1150, //  the camera pushing back in on the glass
     desktopAt: 0.62, //  fraction of enterMs when the real desktop fades in
     fadeMs: 380, //  desktop fade, matches .desktop transition
+    inviteCycleMs: 2000, // CSS uses this same duration; cues read its keyframes
   };
 
   var LINE_ONE = 'Welcome to my website...';
@@ -62,6 +65,11 @@
   var INVITE_POINTER = 'CLICK!';
   var INVITE_TOUCH = 'TAP!';
   var SEEN_KEY = 'atalay.intro';
+
+  // The sound control says what it will do, in the three states it can be in.
+  var SOUND_ON_LABEL = 'Play intro with sound';
+  var SOUND_OFF_LABEL = 'Mute';
+  var SOUND_FAIL_LABEL = 'Sound unavailable';
 
   var root = document.documentElement;
   var room = document.querySelector('[data-room]');
@@ -77,6 +85,13 @@
   var skipBtn = room.querySelector('[data-skip]');
   var soundBtn = room.querySelector('[data-sound]');
   var spokenEl = room.querySelector('[data-spoken]');
+  var handEl = room.querySelector('.invite__hand');
+  var particleEl = room.querySelector('.burst__bit');
+  room.style.setProperty('--invite-cycle', TUNING.inviteCycleMs + 'ms');
+  if (handEl) {
+    handEl.style.setProperty('--tip-x', handEl.dataset.tipX);
+    handEl.style.setProperty('--tip-y', handEl.dataset.tipY);
+  }
 
   var startBtn = desktop.querySelector('[data-start]');
   var startMenu = desktop.querySelector('[data-start-menu]');
@@ -95,8 +110,8 @@
   // The artwork is shown at a whole-number multiple AT REST, which is where the
   // pixel grid matters. The camera is free to pass through fractional scales
   // while it moves - snapping it to integers would make the pullback stutter.
-  var WIDE = { w: 340, h: 180 };
-  var NARROW = { w: 120, h: 168 };
+  var WIDE = { w: 576, h: 330 };
+  var NARROW = { w: 180, h: 252 };
   var narrowQuery = window.matchMedia(
     '(max-width: 34rem), (max-height: 26rem) and (max-width: 44rem),' +
       ' (orientation: portrait) and (max-width: 48rem)'
@@ -261,90 +276,247 @@
   }
 
   // --- Sound --------------------------------------------------------------
-  // Browsers block audio until a real gesture, so the introduction always runs
-  // silently unless someone turns it on. Nothing is ever queued: a beep is
-  // played by the step that is happening now, or not at all.
+  // A browser will not let a page make a noise until someone has interacted
+  // with it, and no amount of delay gets around that: a context created
+  // without a gesture is born `suspended` and stays there. So the opening
+  // always PLAYS silently, and sound is offered as an explicit replay.
+  //
+  // The path is short, and every part of it is checked before a note is made:
+  //
+  //     oscillator -> its own envelope gain -> MASTER gain -> ctx.destination
+  //
+  // The master gain is the mute and the one place the output level is set, so
+  // muting is a single value change rather than a walk over live nodes.
+  //
+  // Nothing is ever scheduled ahead of the step happening now, so there is no
+  // queue to accumulate while a tab is in the background - which is what keeps
+  // `silence()` bounded: cancel the automation already written onto each live
+  // gain, take it to zero over a few milliseconds so stopping does not click,
+  // and stop the oscillator.
 
   var AudioCtx = window.AudioContext || window.webkitAudioContext;
+  var MASTER_LEVEL = 0.6;
   var audio = null;
+  var master = null;
   var soundOn = false;
 
   if (!AudioCtx && soundBtn) soundBtn.hidden = true;
 
-  function toggleSound() {
-    if (!AudioCtx || !soundBtn) return;
-    if (soundOn) {
-      soundOn = false;
-    } else {
-      try {
-        if (!audio) audio = new AudioCtx();
-        if (audio.state === 'suspended') audio.resume();
-        soundOn = true;
-      } catch (err) {
-        soundBtn.hidden = true;
-        return;
-      }
+  /** Build the context and the master gain. Safe to call repeatedly. */
+  function buildAudio() {
+    if (audio && master) return true;
+    if (!AudioCtx) return false;
+    try {
+      audio = new AudioCtx();
+      master = audio.createGain();
+      master.gain.setValueAtTime(MASTER_LEVEL, audio.currentTime);
+      master.connect(audio.destination);
+    } catch (err) {
+      audio = null;
+      master = null;
+      if (soundBtn) soundBtn.hidden = true;
+      return false;
     }
-    soundBtn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
-    if (soundOn) beep(880, 60);
-    else silence();
+    return true;
   }
 
-  // Every node that is currently making a sound, so an interruption can stop
-  // all of them at once. Nothing is ever scheduled ahead: a sound belongs to the
-  // step that is happening now, or it does not happen.
+  /** Resume the context, and resolve with whether it is ACTUALLY running.
+   *
+   * resume() is asynchronous. The previous version called it and then asked
+   * straight away whether the context was running - which it is not yet - so
+   * the first note after turning sound on was always dropped. Everything that
+   * makes a sound now waits on this. Older WebKit returns undefined instead of
+   * a promise, so that is normalised rather than assumed.
+   */
+  function unlockAudio() {
+    if (!buildAudio()) return Promise.resolve(false);
+    if (audio.state === 'running') return Promise.resolve(true);
+    var resumed;
+    try {
+      resumed = audio.resume();
+    } catch (err) {
+      return Promise.resolve(false);
+    }
+    if (!resumed || typeof resumed.then !== 'function') {
+      return Promise.resolve(audio.state === 'running');
+    }
+    return resumed.then(
+      function () { return audio.state === 'running'; },
+      function () { return false; }
+    );
+  }
+
+  function audioReady() {
+    return soundOn && document.visibilityState === 'visible' && !pageGone &&
+      !!audio && !!master && audio.state === 'running';
+  }
+
+  // Every voice currently sounding, as the pair that has to be shut down.
   var voices = [];
 
   function voice(type, freq, ms, peak) {
-    if (!soundOn || !audio || audio.state !== 'running') return;
+    if (!audioReady()) return false;
     var now = audio.currentTime;
     var osc = audio.createOscillator();
     var gain = audio.createGain();
     osc.type = type;
     osc.frequency.setValueAtTime(freq, now);
+    // An exponential ramp cannot start at or pass through zero, so the floor
+    // is a value below hearing rather than silence itself.
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(peak, now + 0.006);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + ms / 1000);
     osc.connect(gain);
-    gain.connect(audio.destination);
+    gain.connect(master);
     osc.start(now);
     osc.stop(now + ms / 1000 + 0.02);
-    voices.push(osc);
+    var live = { osc: osc, gain: gain };
+    voices.push(live);
     osc.onended = function () {
-      var at = voices.indexOf(osc);
+      var at = voices.indexOf(live);
       if (at > -1) voices.splice(at, 1);
-      osc.disconnect();
-      gain.disconnect();
+      try { osc.disconnect(); gain.disconnect(); } catch (err) { /* gone */ }
     };
+    return true;
   }
 
-  /** A short, quiet computer beep. One per dot. */
+  /** A short computer beep. One per dot. */
   function beep(freq, ms) {
-    voice('square', freq, ms, 0.05);
+    return voice('square', freq, ms, 0.16);
   }
 
   /** A soft key click, pitched a little differently each time so a line of
    *  them does not turn into one continuous tone. Spaces make no sound. */
   function keyClick(ch) {
-    if (ch === ' ') return;
-    voice('triangle', 1500 + ((ch.charCodeAt(0) * 37) % 260), 26, 0.022);
+    if (ch === ' ') return false;
+    return voice('triangle', 1500 + ((ch.charCodeAt(0) * 37) % 260), 26, 0.075);
   }
 
   /** The return key: lower, and a touch longer than a letter. */
   function returnKey() {
-    voice('triangle', 680, 70, 0.032);
+    return voice('triangle', 680, 70, 0.1);
   }
 
-  /** Stop everything currently sounding - skip, entry, or navigation. */
+  function backspace() {
+    return voice('triangle', 420, 38, 0.075);
+  }
+
+  /** Filtered noise for a mechanical click and a softer particle-flight breath.
+   * Both use the same master and cancellable voice list as the terminal. */
+  function noise(ms, peak, high, low) {
+    if (!audioReady()) return false;
+    var now = audio.currentTime;
+    var count = Math.ceil(audio.sampleRate * ms / 1000);
+    var buffer = audio.createBuffer(1, count, audio.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < count; i += 1) data[i] = Math.random() * 2 - 1;
+    var source = audio.createBufferSource();
+    source.buffer = buffer;
+    var filter = audio.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 0.7;
+    filter.frequency.setValueAtTime(high, now);
+    filter.frequency.exponentialRampToValueAtTime(low, now + ms / 1000);
+    var gain = audio.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(peak, now + Math.min(0.018, ms / 4000));
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + ms / 1000);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+    var live = { osc: source, gain: gain };
+    voices.push(live);
+    source.onended = function () {
+      var at = voices.indexOf(live);
+      if (at > -1) voices.splice(at, 1);
+      source.disconnect(); filter.disconnect(); gain.disconnect();
+    };
+    source.start(now);
+    source.stop(now + ms / 1000);
+    return true;
+  }
+
+  function mouseClick() { return noise(24, 0.15, 3600, 1400); }
+  function particleFlight() { return noise(210, 0.045, 2800, 850); }
+
+  /** Stop everything currently sounding - skip, mute, entry, or navigation.
+   *
+   * Cancelling the automation first is the part that matters: without it the
+   * ramp already written onto the gain keeps running and the note finishes its
+   * decay after it was supposed to have been stopped.
+   */
   function silence() {
+    if (!audio) { voices.length = 0; return; }
+    var now = audio.currentTime;
     while (voices.length) {
-      var osc = voices.pop();
+      var live = voices.pop();
       try {
-        osc.stop();
+        live.gain.gain.cancelScheduledValues(now);
+        live.gain.gain.setValueAtTime(Math.max(live.gain.gain.value, 0.0001), now);
+        live.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.004);
+        live.osc.stop(now + 0.006);
       } catch (err) {
         /* already stopped */
       }
     }
+  }
+
+  function paintSoundButton() {
+    if (!soundBtn) return;
+    soundBtn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
+    soundBtn.textContent = soundOn ? SOUND_OFF_LABEL : SOUND_ON_LABEL;
+  }
+
+  /** Mute: silence what is sounding now, and shut the one gain they all pass
+   *  through so nothing later gets out either. */
+  function muteSound() {
+    soundOn = false;
+    inviteMuted = true;
+    stopInvitation();
+    if (state === 'room-ready') room.dataset.invite = 'still';
+    silence();
+    if (master && audio) {
+      try {
+        master.gain.cancelScheduledValues(audio.currentTime);
+        master.gain.setValueAtTime(0, audio.currentTime);
+      } catch (err) { /* nothing live */ }
+    }
+    paintSoundButton();
+  }
+
+  /** The explicit, clearly labelled way to hear the opening.
+   *
+   * This is the only thing that turns sound on, and it only ever runs from a
+   * real click or tap, because that is the only thing a browser accepts as
+   * permission to make a noise. It replays the short opening from its initial
+   * hold so all three beeps are actually heard. That is a deliberate replay on
+   * request - not the intro playing again on every refresh.
+   */
+  function playIntroWithSound() {
+    if (!soundBtn) return;
+    if (soundOn) { muteSound(); return; }
+    unlockAudio().then(function (running) {
+      if (pageGone || document.visibilityState !== 'visible' ||
+          state === 'desktop' || state === 'entering-desktop') return;
+      if (!running) {
+        // Permission refused, or there is no output device. Say so, rather
+        // than leaving a pressed button that plays nothing.
+        soundOn = false;
+        paintSoundButton();
+        soundBtn.disabled = true;
+        soundBtn.textContent = SOUND_FAIL_LABEL;
+        return;
+      }
+      soundOn = true;
+      inviteMuted = false;
+      try {
+        master.gain.cancelScheduledValues(audio.currentTime);
+        master.gain.setValueAtTime(MASTER_LEVEL, audio.currentTime);
+      } catch (err) { /* fresh context */ }
+      paintSoundButton();
+      replayIntro();
+      if (reduceQuery.matches && state === 'room-ready') startInvitation();
+    });
   }
 
   // --- The two lines ------------------------------------------------------
@@ -422,21 +594,38 @@
     cursor = 0;
     var i;
 
-    // A. the tube wakes up: a dot straight away, then two more, then a hold.
-    for (i = 2; i <= 3; i += 1) {
+    // A. The tube is already lit and showing its own texture, with NOTHING on
+    // it. It holds like that, and only then do the three dots arrive, one per
+    // beep, evenly spaced. From the start of the opening:
+    //
+    //      650ms  .     beep one
+    //     1050ms  ..    beep two
+    //     1450ms  ...   beep three
+    //     1850ms  ..    backspace one
+    //     1970ms  .     backspace two
+    //     2090ms        backspace three; typing follows
+    //
+    // The first delay is the hold; the other two are the gap between dots.
+    for (i = 1; i <= 3; i += 1) {
       (function (n) {
-        step(TUNING.bootDotMs, function () {
+        step(n === 1 ? TUNING.bootHoldMs : TUNING.bootDotMs, function () {
+          caretRow = 1;
           lines[0] = new Array(n + 1).join('.');
           paint();
           beep(700, 70);
         });
       })(i);
     }
-    step(TUNING.bootHoldMs, function () {
-      lines[0] = '';
-      setState('typing');
-      paint();
-    });
+    for (i = 2; i >= 0; i -= 1) {
+      (function (remaining) {
+        step(remaining === 2 ? TUNING.bootClearMs : TUNING.backspaceMs, function () {
+          lines[0] = new Array(remaining + 1).join('.');
+          if (remaining === 0) setState('typing');
+          paint();
+          backspace();
+        });
+      })(i);
+    }
 
     // B. the introduction prints, a character at a time.
     for (i = 1; i <= LINE_ONE.length; i += 1) {
@@ -538,8 +727,49 @@
     if (focusScreen && goBtn) goBtn.focus();
   }
 
+  /** Skip has nothing left to skip once the room is up, but the sound control
+   *  still has something to offer, so it stays. That is what makes the replay
+   *  reachable: the opening is short, and without this the only way to hear it
+   *  would be to click within the few seconds it is still running. */
   function hideControls() {
-    if (controls) controls.hidden = true;
+    if (skipBtn) skipBtn.hidden = true;
+    if (controls && (!soundBtn || soundBtn.hidden)) controls.hidden = true;
+  }
+
+  /** Put the opening back to its first frame and play it again, with sound.
+   *
+   * Reached only from the sound control, so it always follows a real gesture.
+   * Everything in flight is torn down first - the timer, the camera, any live
+   * voice and the invitation - so a replay during the pullback cannot leave a
+   * second animation running behind this one.
+   */
+  function replayIntro() {
+    if (reduceQuery.matches) return;
+    stopTimer();
+    stopCamera();
+    stopRevealTimer();
+    clearEnterTimers();
+    silence();
+    stopInvitation();
+    if (goBtn) {
+      goBtn.hidden = true;
+      goBtn.removeAttribute('data-pressed');
+    }
+    room.dataset.lines = 'on';
+    lines[0] = '';
+    lines[1] = '';
+    caretRow = 0;
+    typing = true;
+    paint();
+    if (spokenEl) spokenEl.textContent = '';
+    if (skipBtn) skipBtn.hidden = false;
+    if (controls) controls.hidden = false;
+    setState('boot');
+    measure();
+    applyPose(poseAt(0));
+    startedAt = Date.now();
+    buildSequence();
+    runSteps();
   }
 
   function rememberIntro() {
@@ -560,16 +790,78 @@
 
   // --- D. the invitation --------------------------------------------------
 
+  var inviteFrame = null;
+  var inviteMuted = false;
+  var pageGone = false;
+  var cueRun = null;
+
+  function invitationAnimation(el, name) {
+    return el && el.getAnimations().find(function (a) { return a.animationName === name; });
+  }
+
+  /** Follow the rendered CSS animation's playhead. The contact and first visible
+   * flight offsets COME FROM its keyframes, so editing CSS cannot leave an
+   * independent audio timer running at the old phase. Missed frames are dropped. */
+  function followInvitation(realPress, continuing) {
+    if (inviteFrame !== null) cancelAnimationFrame(inviteFrame);
+    inviteFrame = null;
+    if (!soundOn || reduceQuery.matches || inviteMuted || pageGone ||
+        document.visibilityState !== 'visible') return;
+    var hand = invitationAnimation(handEl, realPress ? 'hand-fire' : 'invite-hand');
+    var flight = invitationAnimation(particleEl, realPress ? 'burst-fire' : 'burst');
+    if (!hand || !flight) return;
+    var duration = flight.effect.getTiming().duration;
+    var contactAt = realPress ? 0 : hand.effect.getKeyframes()[2].computedOffset * duration;
+    var visible = flight.effect.getKeyframes().find(function (f) { return Number(f.opacity) > 0; });
+    if (!visible) return;
+    var flightAt = visible.computedOffset * duration;
+    cueRun = continuing || { cycle: -1, contact: realPress, flight: false };
+    if (realPress) mouseClick();
+    function tick() {
+      inviteFrame = null;
+      if (!soundOn || inviteMuted || pageGone || document.visibilityState !== 'visible' ||
+          !['on', 'fire', 'finish'].includes(room.dataset.invite)) return;
+      var elapsed = Number(flight.currentTime || 0);
+      var cycle = realPress ? 0 : Math.floor(elapsed / duration);
+      var t = realPress ? elapsed : elapsed % duration;
+      if (cycle !== cueRun.cycle) {
+        cueRun.cycle = cycle;
+        cueRun.contact = realPress;
+        cueRun.flight = false;
+      }
+      if (flight.playState === 'running') {
+        if (!cueRun.contact && t >= contactAt) {
+          cueRun.contact = true;
+          if (t - contactAt < 80) mouseClick();
+        }
+        if (!cueRun.flight && t >= flightAt) {
+          cueRun.flight = true;
+          if (t - flightAt < 80) particleFlight();
+        }
+      }
+      if (flight.playState !== 'finished') inviteFrame = requestAnimationFrame(tick);
+    }
+    inviteFrame = requestAnimationFrame(tick);
+  }
+
   function inviteWord() {
     return hoverQuery.matches ? INVITE_POINTER : INVITE_TOUCH;
   }
 
   function startInvitation() {
     if (goLabel) goLabel.textContent = inviteWord();
+    if (pageGone || inviteMuted || document.visibilityState !== 'visible') {
+      room.dataset.invite = 'still';
+      return;
+    }
+    if (room.dataset.invite === 'on') return;
     room.dataset.invite = 'on';
+    followInvitation(false);
   }
 
   function stopInvitation() {
+    if (inviteFrame !== null) cancelAnimationFrame(inviteFrame);
+    inviteFrame = null;
     room.dataset.invite = 'off';
   }
 
@@ -616,9 +908,31 @@
    */
   function activate() {
     if (state !== 'room-ready') return;
+    var demo = invitationAnimation(handEl, 'invite-hand');
+    var phase = demo ? Number(demo.currentTime) % TUNING.inviteCycleMs : -1;
+    var frames = demo ? demo.effect.getKeyframes() : [];
+    // A click arriving while the glove is already holding the key accepts that
+    // press. Finish its existing flight once; don't launch a second burst/noise.
+    var acceptPress = demo && phase >= frames[2].computedOffset * TUNING.inviteCycleMs &&
+      phase <= frames[4].computedOffset * TUNING.inviteCycleMs;
+    var previousCues = cueRun;
     setState('entering-desktop');
-    silence();
-    room.dataset.invite = 'fire';
+    if (inviteFrame !== null) cancelAnimationFrame(inviteFrame);
+    inviteFrame = null;
+    if (acceptPress && !inviteMuted && !reduceQuery.matches) {
+      // Rewind to THIS iteration before limiting it to one. Changing iterations
+      // first makes a later-cycle CSS animation finish and leave getAnimations().
+      room.querySelectorAll('.invite__hand, .crt__go-face, .burst__bit').forEach(function (el) {
+        el.getAnimations().forEach(function (a) { a.currentTime = phase; });
+      });
+      room.dataset.invite = 'finish';
+      if (previousCues) previousCues.cycle = 0;
+      followInvitation(false, previousCues);
+    } else {
+      silence();
+      room.dataset.invite = inviteMuted ? 'still' : 'fire';
+      if (!inviteMuted) followInvitation(true);
+    }
     if (goBtn) goBtn.setAttribute('data-pressed', '');
 
     if (reduceQuery.matches) {
@@ -632,7 +946,7 @@
   }
 
   function clearInvitation() {
-    room.dataset.invite = 'off';
+    stopInvitation();
     if (goBtn) {
       goBtn.removeAttribute('data-pressed');
       goBtn.hidden = true;
@@ -734,7 +1048,10 @@
   // --- Wiring -------------------------------------------------------------
 
   if (skipBtn) skipBtn.addEventListener('click', function () { skipIntro(true); });
-  if (soundBtn) soundBtn.addEventListener('click', toggleSound);
+  if (soundBtn) {
+    paintSoundButton();
+    soundBtn.addEventListener('click', playIntroWithSound);
+  }
 
   // The button is a real one, so click, Enter and Space all arrive here.
   if (goBtn) {
@@ -832,14 +1149,32 @@
   // queue, but it can come back a long way behind, so if the opening has
   // outlived its whole budget it resolves to the finished room.
   var BUDGET =
-    2 * TUNING.bootDotMs + TUNING.bootHoldMs +
+    TUNING.bootHoldMs + 2 * TUNING.bootDotMs + TUNING.bootClearMs +
+    2 * TUNING.backspaceMs +
     (LINE_ONE.length + LINE_TWO.length) * TUNING.typeMs + TUNING.lineHoldMs +
     TUNING.newlineMs + TUNING.doneHoldMs + TUNING.pullbackMs + 4000;
 
-  window.addEventListener('pagehide', silence);
+  window.addEventListener('pagehide', function () {
+    pageGone = true;
+    stopTimer(); stopRevealTimer(); stopCamera(); clearEnterTimers(); stopClock();
+    stopInvitation(); silence();
+  });
+  window.addEventListener('pageshow', function () {
+    if (!pageGone) return;
+    pageGone = false;
+    if (state === 'entering-desktop') finishEnter();
+    else if (state === 'desktop') startClock();
+    else if (state === 'room-ready') startInvitation();
+    else skipIntro(false);
+  });
 
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState !== 'visible') { silence(); return; }
+    if (document.visibilityState !== 'visible') {
+      stopInvitation(); silence();
+      if (state === 'room-ready') room.dataset.invite = 'still';
+      return;
+    }
+    if (state === 'room-ready') startInvitation();
     if (state !== 'boot' && state !== 'typing') return;
     if (Date.now() - startedAt > BUDGET) skipIntro(false);
   });
@@ -859,6 +1194,8 @@
   if (reduceQuery.addEventListener) {
     reduceQuery.addEventListener('change', function () {
       if (state === 'boot' || state === 'typing') skipIntro(false);
+      stopInvitation(); silence();
+      if (state === 'room-ready') startInvitation();
     });
   }
 
@@ -882,9 +1219,12 @@
   } else {
     measure();
     applyPose(poseAt(0)); // start pushed in on the glass
-    caretRow = 1;
+    // The tube is lit and carries its own texture, but nothing is printed on
+    // it yet - not even a caret. The first dot arrives after the hold.
+    caretRow = 0;
     typing = true;
-    lines[0] = '.'; // the first dot is already there; two more follow
+    lines[0] = '';
+    lines[1] = '';
     paint();
     // Start once the terminal face is in, so the line does not reflow under the
     // caret. Capped, so a slow font never holds the introduction hostage.

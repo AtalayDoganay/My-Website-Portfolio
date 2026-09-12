@@ -1,102 +1,156 @@
+import math
+
 # ============================================================================
 # The desk scene.
 #
-# One oblique projection for everything: depth runs back and to the LEFT on a
-# 2:1 step. That is what turns the monitor to face slightly right - you see its
-# left casing - and it is the same diagonal the desk, tower, keyboard and mouse
-# all recede along, so the group reads as one surface rather than a pile of
-# separately-drawn objects.
+# ONE VIEWPOINT, SHARED BY EVERYTHING. The scene is laid out in desk
+# coordinates first - x to the right, y up from the tabletop, z away from the
+# viewer, one unit being one pixel at the front plane - and drawn through one
+# projection (`View`): the viewer stands in front of the desk and slightly
+# above it, so depth is foreshortened to HALF and recedes UP the picture, with
+# a modest turn of one pixel to the LEFT for every six units of depth. Front
+# faces stay true rectangles on the grid, tops are visible parallelograms, and
+# left sides are thin slivers. Physical positions are decided before anything
+# is drawn: every object below has a footprint on the tabletop, a height, and
+# a depth, and its contact shadow sits under its front edge on that plane.
 #
-# Volume comes from deliberate planes, never from shading a single tone. Every
-# object that has depth is built the same way: a LIT TOP (case_top), a FRONT
-# turned toward us (case_front), a LEFT SIDE turned away (case_side), a bright
-# edge where two planes meet toward the light (case_edge), and a dark recess or
-# underside (case_deep). The light is up and to the left, and it stays there.
+# Volume comes from deliberate planes, never from shading a single tone: a LIT
+# TOP (case_top), a FRONT turned toward us (case_front), a LEFT SIDE turned
+# away (case_side), a bright edge where two planes meet toward the light
+# (case_edge), and a dark recess or underside (case_deep). The light is up and
+# to the left, and it stays there.
 #
-# Objects are placed by their CONTACT POINT: the y where their base meets the
-# tabletop. The tabletop runs from the back edge to the front edge, so every
-# base y below is a position within that span and nothing floats:
-#
-#     100  back edge of the tabletop
-#     108  tower stands here      (furthest back)
-#     114  monitor base stands here
-#     118  back edge of the keyboard
-#     134  front edge of the keyboard; 138 the mouse
-#     142  front edge of the tabletop, then 10px of thickness, then the legs
-#
-# The desk runs off both sides of the frame. A visible end would have to be a
-# parallelogram as wide as the depth step, and at this scale that reads as a
-# ramp rather than as furniture; two legs under a surface that continues past
-# the frame reads as a desk immediately.
-#
-# The legs run off the BOTTOM edge too - DESK_FOOT is past the canvas, so their
-# outlines are clipped rather than closed. The page bottom-aligns the artwork,
-# so they leave the frame the way the tabletop leaves it at the sides, and the
-# scene needs no drawn floor and no CSS band pretending to be one.
+# Real proportions, at 0.435 px/mm: a 455mm keyboard is 198 wide; a 14-inch
+# CRT is 132 wide, 118 tall and 138 deep, stepped from a bezel block to a
+# narrower tube housing; a small tower is 66 x 140 x 138; a mouse 27 x 50 and
+# 16 high; the desk 1200 x 575 with a 28mm top. The narrow framing keeps the
+# same projection at a smaller equipment scale, so the tube stays readable.
 # ============================================================================
 
-# --- wide framing -----------------------------------------------------------
-W, H = 340, 180
 
-DESK_FY, DESK_DX, DESK_DY = 142, 84, 42        # front edge, and the 2:1 step back
-DESK_FX0, DESK_FX1 = -60, 420                  # past both edges of the frame
-DESK_LIP = 10                                  # front thickness of the tabletop
-DESK_FOOT = H + 4                              # past the bottom edge: see below
-DESK_LEGS = (40, 282)
+class View:
+    """The scene's one projection. Returns integer canvas coordinates."""
 
-MON_X, MON_Y, MON_W, MON_H = 58, 14, 88, 76
-MON_DX, MON_DY = 22, 11
-SCREEN_X, SCREEN_Y, SCREEN_W, SCREEN_H = 66, 21, 72, 54
-MON_BASE_Y = 114
+    def __init__(self, x0, y0):
+        self.x0, self.y0 = x0, y0          # canvas position of desk-space (0, 0, 0)
 
-# The tower moved 30px left: the gap between the monitor's front-right edge and
-# the tower's rearmost corner went from 57px to 25px. They read as one setup now
-# rather than two objects at opposite ends of the desk, and no silhouette
-# overlaps another.
-TOW_X, TOW_Y, TOW_W, TOW_H = 186, 32, 40, 76
-TOW_DX, TOW_DY = 15, 8
+    def __call__(self, x, y, z):
+        return (round(self.x0 + x - z / 6), round(self.y0 - y - z / 2))
 
-KB_X0, KB_X1, KB_Y = 126, 258, 134
-KB_DX, KB_DY = 32, 16
-MOUSE_X, MOUSE_Y, MOUSE_W, MOUSE_D = 276, 133, 26, 6
+    def col(self, x, z):
+        return round(self.x0 + x - z / 6)
 
-# Each cable starts UNDER its own object and ends inside the tower, so it
-# emerges from behind the one and vanishes behind the other. Nothing is left
-# hanging in open tabletop, and none crosses a base, a deck or the case.
-MON_CABLE = [((112, 112), (148, 110), (178, 102))]
-KB_CABLE = [((150, 128), (176, 118), (196, 104))]
-MOUSE_CABLE = [((280, 131), (256, 122), (224, 106))]
+    def row(self, y, z):
+        return round(self.y0 - y - z / 2)
 
 
-def contact(c, x0, x1, y):
-    """The tight occlusion shadow where an object meets the tabletop.
+def frange(a, b, step=0.5):
+    n = int(round((b - a) / step))
+    return [a + i * step for i in range(n + 1)]
 
-    `y` is the object's OWN contact row - the row immediately after its last
-    drawn pixel. The previous version started a row lower, which left a strip of
-    bare tabletop between every object and its shadow and made the whole group
-    look like it was hovering.
+
+# ----------------------------------------------------------------- helpers
+
+
+def face_rect(c, p, x0, x1, y0, y1, z, key):
+    """The front face of a box: inclusive extents, a true rectangle."""
+    ax, ay = p(x0, y1, z)
+    bx, by = p(x1, y0, z)
+    if key:
+        c.rect(ax, ay, bx - ax + 1, by - ay + 1, key)
+    return ax, ay, bx, by
+
+
+def draw_box(c, p, x0, x1, y0, y1, z0, z1, top="case_top", front="case_front",
+             side="case_side", edge=True, outline=True):
+    """A box with inclusive x/y extents and depth z0..z1: left side, top, front."""
+    o = "outline"
+    S = [p(x0, y0, z0), p(x0, y1, z0), p(x0, y1, z1), p(x0, y0, z1)]
+    T = [p(x0, y1, z0), p(x1, y1, z0), p(x1, y1, z1), p(x0, y1, z1)]
+    if side:
+        c.poly(S, side)
+    if top:
+        c.poly(T, top)
+    F = face_rect(c, p, x0, x1, y0, y1, z0, front)
+    ax, ay, bx, by = F
+    if front and edge:
+        c.hline(ax + 1, bx - 1, ay + 1, "case_edge")
+        c.vline(ax + 1, ay + 1, by - 1, "case_edge")
+    if outline:
+        if side:
+            c.outline_poly(S, o)
+        if top:
+            c.outline_poly(T, o)
+        if front:
+            c.frame(ax, ay, bx - ax + 1, by - ay + 1, o)
+    return S, T, F
+
+
+def contact(c, p, x0, x1, z):
+    """The tight occlusion shadow under an object's front edge, on the tabletop."""
+    r = p(x0, 0, z)[1] + 1
+    c.hline(p(x0, 0, z)[0], p(x1, 0, z)[0], r, "desk_side")
+    c.hline(p(x0, 0, z)[0] + 2, p(x1, 0, z)[0] - 2, r + 1, "desk_side")
+
+
+def cast(c, p, x1, z0, z1, width=8):
+    """The longer shadow an object throws to the RIGHT along its depth.
+
+    The light is up and to the left, so everything on this desk throws the
+    same way; the band follows the object's footprint on the tabletop plane.
     """
-    c.hline(x0, x1, y, "desk_side")
-    c.hline(x0 + 2, x1 - 2, y + 1, "desk_side")
+    c.poly([p(x1 + 1, 0, z0), p(x1 + width, 0, z0), p(x1 + width, 0, z1), p(x1 + 1, 0, z1)],
+           "desk_cast")
 
 
-def cast(c, x0, x1, y, rows, step=2):
-    """The longer shadow an object throws, stepping down and to the RIGHT.
+def fill_holes(layer):
+    """Close single pixels the sampled surfaces skipped inside a solid shape.
 
-    Distinct from the contact shadow in both value and direction: the light is
-    up and to the left, so everything on this desk throws the same way.
+    The outline pass rings anything transparent, so a one-pixel hole inside a
+    shell would come out as a white diamond on it. A pixel is a hole when solid
+    material lies in all four directions of it.
     """
-    for i in range(rows):
-        c.hline(x0 + (i + 1) * step, x1 + (i + 1) * step, y + i, "desk_cast")
+    solid = [(x, y) for y, row in enumerate(layer.px) for x, k in enumerate(row) if k]
+    if not solid:
+        return
+    x0, x1 = min(x for x, _ in solid), max(x for x, _ in solid)
+    y0, y1 = min(y for _, y in solid), max(y for _, y in solid)
+    for yy in range(y0, y1 + 1):
+        for xx in range(x0, x1 + 1):
+            if layer.get(xx, yy):
+                continue
+            around = []
+            for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                x, y = xx + dx, yy + dy
+                while x0 <= x <= x1 and y0 <= y <= y1 and not layer.get(x, y):
+                    x, y = x + dx, y + dy
+                around.append(layer.get(x, y))
+            if all(around):
+                layer.set(xx, yy, around[2])
+
+
+def composite(c, layer):
+    """Outline the union of a layer: joined parts get material seams, not gaps."""
+    fill_holes(layer)
+    for yy, row in enumerate(layer.px):
+        for xx, key in enumerate(row):
+            if key is None:
+                continue
+            edge = any(layer.get(xx + dx, yy + dy) is None
+                       for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)))
+            c.set(xx, yy, "outline" if edge else key)
+
+
+# -------------------------------------------------------------------- desk
 
 
 def desk_plan(canvas_h, fy, dy, lip):
-    """The tabletop's horizontal structure, row by row, for the page to extend.
+    """The narrow tabletop's horizontal structure, row by row, for the page.
 
-    The artwork is centred and is narrower than the window, so unless the page
-    continues these rows out to both edges the desk ends in mid-air with wall
-    showing past either end. Reporting the plan from here is what keeps that
-    extension in step with what is drawn: no row count is ever copied by hand.
+    Only the narrow framing uses this. Its tabletop runs off both sides of the
+    canvas, and unless the page continues these rows out to the viewport edges
+    the desk ends in mid-air with wall showing past either end. The wide
+    framing draws a finite desk and reports None, and the page paints no band.
     """
     by = fy - dy
     rows = [
@@ -111,270 +165,391 @@ def desk_plan(canvas_h, fy, dy, lip):
     return {"fromBottom": canvas_h - (fy + lip), "rows": rows}
 
 
-def draw_desk(c, fx0, fx1, fy, dx, dy, lip, foot, legs, leg_w=14):
-    """Tabletop, its front thickness, and the legs holding it up."""
-    o = "outline"
-    bx0, bx1, by = fx0 - dx, fx1 - dx, fy - dy
+def draw_desk(c, p, x0, x1, d, t, leg, legs):
+    """A plain rectangular table: top, front thickness, left end, square legs.
 
-    top = [(fx0, fy), (fx1, fy), (bx1, by), (bx0, by)]
-    c.poly(top, "desk_top")
-    c.hline(0, c.w, by, o)
-
-    # legs first: they belong behind the front edge they hang from
-    for lx in legs:
-        c.rect(lx, fy, leg_w, foot - fy, "desk_side")
-        c.vline(lx + 1, fy + lip, foot - 1, "desk_front")
-        c.frame(lx, fy + lip - 1, leg_w, foot - fy - lip + 1, o)
-
-    c.rect(fx0, fy, fx1 - fx0, lip, "desk_front")
-    c.hline(0, c.w, fy + 1, "desk_edge")        # catch-light along the front edge
-    c.hline(0, c.w, fy, o)
-    c.hline(0, c.w, fy + lip - 1, o)
-
-
-def draw_stand(c, cx, top_y, base_y, collar=20, foot=26, collar_h=8, dx=8, dy=4):
-    """The monitor's support, drawn as ONE assembly rather than stacked slabs.
-
-    Real CRT pedestals are built this way: a rocker fixed to the flat underside
-    of the casing, seated into a recess in a broad pedestal whose top is a flat
-    ring (US4575033A). There is no thin post anywhere in it, and often no
-    visible neck at all - the casing sits almost straight onto the pedestal.
-
-    Two things were wrong before. Each piece was outlined on all four sides, and
-    an outline between two parts that are joined is a SEAM - which is exactly
-    what the eye uses to separate them, so it read as thin slabs balanced on
-    each other. And there were three stacked widths, which put two steps in the
-    left profile and made it jagged. Now the silhouette is one stepped polygon
-    with a single step, the outline runs only around the OUTSIDE, and every
-    internal junction is an overlap with a shadow under it.
+    The back legs go down first and the top over them, so they hang from the
+    underside; from this viewpoint they show below the thin end face on the
+    left and just inside the front legs on the right, which is the overlap a
+    real table has. All four run off the bottom of the frame, where the page
+    bottom-aligns the artwork.
     """
     o = "outline"
-    y1 = top_y + collar_h          # the collar sinks into the pedestal's ring
 
-    # 1. the pedestal's top ring, laid down first so the collar seats into it
-    ring = [(cx - foot, y1), (cx + foot, y1),
-            (cx + foot - dx, y1 - dy), (cx - foot - dx, y1 - dy)]
-    c.poly(ring, "case_top")
-    c.outline_poly(ring, o)
+    def post(x, z):
+        draw_box(c, p, x, x + leg - 1, -t - 400, -t, z, z + leg, top=None,
+                 front="desk_front", side="desk_side", edge=False)
+        ax, ay = p(x, -t, z)
+        c.vline(ax + 1, ay + 1, c.h, "desk_edge")
 
-    # 2. one stepped silhouette for the whole assembly, and one side plane
-    front = [
-        (cx - collar, top_y), (cx + collar, top_y), (cx + collar, y1),
-        (cx + foot, y1), (cx + foot, base_y), (cx - foot, base_y),
-        (cx - foot, y1), (cx - collar, y1),
-    ]
-    edge = [(cx - collar, top_y), (cx - collar, y1),
-            (cx - foot, y1), (cx - foot, base_y)]
-    side = edge + [(x - dx, y - dy) for x, y in reversed(edge)]
-    c.poly(side, "case_side")
-    c.poly(front, "case_front")
-
-    # 3. the joins: shadow where one part meets the next, never an outline
-    c.hline(cx - collar + 1, cx + collar - 1, top_y, "case_deep")     # under the casing
-    c.hline(cx - collar + 2, cx + collar - 2, top_y + 1, "case_deep")
-    c.hline(cx - collar - 3, cx + collar + 3, y1 - 1, "case_deep")    # into the ring
-
-    # 4. the light is up and to the left, so the left of every plane catches it
-    c.vline(cx - collar + 1, top_y + 2, y1 - 2, "case_edge")
-    c.vline(cx - foot + 1, y1 + 2, base_y - 3, "case_edge")
-    c.hline(cx - foot + 1, cx + foot - 2, y1 + 1, "case_edge")        # the pedestal rim
-    c.vline(cx + collar - 2, top_y + 2, y1 - 2, "case_deep")
-    c.vline(cx + foot - 2, y1 + 2, base_y - 3, "case_deep")
-    c.hline(cx - foot + 2, cx + foot - 2, base_y - 2, "case_deep")    # the underside
-
-    c.outline_poly(side, o)
-    c.outline_poly(front, o)
-    return cx - foot - dx, cx + foot
+    # Every leg goes down first. Each stands a little behind the edge it hangs
+    # from, so its top projects a few rows above that edge's underside; the
+    # top, the end face and the front thickness are drawn over them and hide
+    # exactly those rows, which is what attaches the legs to the underside.
+    for x, z, back in legs:
+        post(x, z)
+    top = [p(x0, 0, 0), p(x1, 0, 0), p(x1, 0, d), p(x0, 0, d)]
+    end = [p(x0, 0, 0), p(x0, 0, d), p(x0, -t + 1, d), p(x0, -t + 1, 0)]
+    c.poly(top, "desk_top")
+    c.poly(end, "desk_side")
+    ax, ay, bx, by = face_rect(c, p, x0, x1, -t + 1, 0, 0, "desk_front")
+    c.hline(ax + 1, bx - 1, ay + 1, "desk_edge")
+    c.outline_poly(top, o)
+    c.outline_poly(end, o)
+    c.frame(ax, ay, bx - ax + 1, by - ay + 1, o)
 
 
-def draw_monitor(c, fx, fy, fw, fh, dx, dy, sx, sy, sw, sh, base_y, stand=None):
-    """Front moulding, left side, top, tube, chin controls, stand and base."""
-    o = "outline"
-    # The stand goes down FIRST: its collar reaches a few rows up behind the
-    # casing's bottom edge, and drawing it afterwards left that corner poking
-    # through the front face as a detached notch.
-    foot = draw_stand(c, fx + fw // 2, fy + fh, base_y, **(stand or {}))
+def desk_legs(x0, x1, d, leg, inset):
+    return [(x0 + inset, d - inset - leg, True), (x1 - inset - leg + 1, d - inset - leg, True),
+            (x0 + inset, inset, False), (x1 - inset - leg + 1, inset, False)]
 
-    side = [(fx, fy), (fx - dx, fy - dy), (fx - dx, fy + fh - dy), (fx, fy + fh)]
-    c.poly(side, "case_side")
-    for i in range(4):
-        vy = fy + 22 + i * 8
-        c.line(fx - 6, vy, fx - dx + 5, vy - (dy - 6), "case_deep")
 
-    top = [(fx, fy), (fx + fw, fy), (fx + fw - dx, fy - dy), (fx - dx, fy - dy)]
-    c.poly(top, "case_top")
+# ------------------------------------------------------------------ monitor
 
-    c.rect(fx, fy, fw, fh, "case_front")
-    c.hline(fx + 1, fx + fw - 2, fy + 1, "case_edge")
-    c.vline(fx + 1, fy + 1, fy + fh - 2, "case_edge")
-    c.vline(fx + 3, fy + 3, fy + fh - 3, "case_deep")
 
+def draw_stand(c, p, plate, housing, chin_row):
+    """The tilt/swivel support, built in the order the monitor is assembled.
+
+    Under the casing there is a mounting area (its underside, in shadow); a
+    short tilt/swivel HOUSING - a truncated cone - is seated into it; and the
+    housing stands in a shaded socket on a broad, low PLATE with rounded
+    corners that rests on the desk. The housing sits behind the casing's front
+    face, under its depth, so from this viewpoint the chin hides its top rows
+    and the joint is the dark band that emerges beneath the bezel. One layer,
+    one outline: no silhouette is separated from another by air.
+    """
+    layer = c.__class__(c.w, c.h, c.palette)
+    x, w, z0, d, h, r = (plate[k] for k in ("x", "w", "z", "d", "h", "r"))
+
+    def inset(dist):
+        return r - math.sqrt(r * r - (r - dist) ** 2) if dist < r else 0
+
+    for z in frange(z0, z0 + d):
+        ins = inset(min(z - z0, z0 + d - z))
+        a, b = p(x + ins, h, z), p(x + w - ins, h, z)
+        layer.hline(a[0], b[0], a[1], "case_top")
+    for xx in frange(x, x + w):
+        zf = z0 + inset(min(xx - x, x + w - xx))
+        for y in frange(0, h):
+            layer.set(*p(xx, y, zf), "case_front")
+    a, b = p(x + r, h, z0), p(x + w - r, h, z0)
+    layer.hline(a[0] + 1, b[0] - 1, a[1], "case_edge")
+
+    cx, cz, r0, r1, y0, y1 = (housing[k] for k in ("cx", "cz", "r0", "r1", "y0", "y1"))
+    # The socket shows only as the shadow crescent in front of the foot. A ring
+    # that continued round the sides read as a bowl sunk into the plate.
+    for z in frange(cz - r0 - 1.5, cz - 4):
+        half = math.sqrt(max(0.0, (r0 + 1.5) ** 2 - (z - cz) ** 2))
+        a, b = p(cx - half, h, z), p(cx + half, h, z)
+        layer.hline(a[0], b[0], a[1], "case_deep")
+    for y in frange(y0, y1):
+        t = (y - y0) / (y1 - y0)
+        rad = r0 + (r1 - r0) * t
+        for deg in range(-90, 91, 2):
+            th = math.radians(deg)
+            key = "case_front"
+            if deg < -62 or deg > 68:
+                key = "case_side"
+            px, py = p(cx + rad * math.sin(th), y, cz - rad * math.cos(th))
+            if py <= chin_row + 2:
+                key = "case_deep"           # the joint: the rows in the chin's shadow
+            layer.set(px, py, key)
+    composite(c, layer)
+
+
+def draw_monitor(c, p, m, stand):
+    """Support, then the tube housing, then the bezel block with the glass."""
+    x, w, y, h, z, bd = (m[k] for k in ("x", "w", "y", "h", "z", "bezel_d"))
+    r = m["rear"]
+    draw_stand(c, p, chin_row=p(x, y, z)[1], **stand)
+    x1, y1 = x + w - 1, y + h - 1
+
+    # The tube housing: narrower and lower than the bezel block, deep.
+    rx0, rx1 = x + r["inset"], x1 - r["inset"]
+    ry0, ry1 = y + r["bottom"], y1 - r["top"]
+    rz0, rz1 = z + bd, z + bd + r["d"]
+    draw_box(c, p, rx0, rx1, ry0, ry1, rz0, rz1, front=None, edge=False)
+    for k in range(4):                       # vents across the housing's top
+        zz = rz1 - 14 - k * 9
+        a, b = p(rx0 + 16, ry1, zz), p(rx1 - 16, ry1, zz)
+        c.hline(a[0], b[0], a[1], "case_deep")
+
+    # The bezel block, whose front face is the true rectangle the glass sits in.
+    S, T, F = draw_box(c, p, x, x1, y, y1, z, z + bd)
+    ax, ay, bx, by = F
+    c.vline(ax + 3, ay + 3, by - 3, "case_deep")
+    for k in range(4):                       # side vents, along the depth
+        yy = y + 30 + k * 9
+        a, b = p(x, yy, z + 5), p(x, yy, z + bd - 5)
+        c.line(a[0], a[1], b[0], b[1], "case_deep")
+
+    s = m["screen"]
+    sx, sy = p(x + s["x"], y + s["y"] + s["h"] - 1, z)
+    sw, sh = s["w"], s["h"]
     c.rect(sx - 2, sy - 2, sw + 4, sh + 4, "case_deep")
     c.rect(sx, sy, sw, sh, "glass")
     c.rect(sx + 6, sy + 5, sw - 12, sh - 10, "glass_lit")
     c.dither(sx + 3, sy + 3, sw - 6, 3, "glass_lit", density=6)
     c.dither(sx + 3, sy + sh - 6, sw - 6, 3, "glass_lit", density=6)
-    c.frame(sx - 1, sy - 1, sw + 2, sh + 2, o)
+    c.frame(sx - 1, sy - 1, sw + 2, sh + 2, "outline")
 
-    chin = sy + sh + 6
-    c.frame(fx + 7, chin, 8, 8, o)
-    c.rect(fx + 8, chin + 1, 6, 6, "case_top")
-    c.rect(fx + 10, chin + 2, 2, 4, "case_deep")
-    c.rect(fx + 20, chin + 3, 3, 3, "led")
-    for i in range(4):
-        c.rect(fx + 48 + i * 9, chin + 3, 6, 3, "case_deep")
+    chin = sy + sh + 6                       # controls under the glass
+    c.frame(ax + 7, chin, 8, 8, "outline")
+    c.rect(ax + 8, chin + 1, 6, 6, "case_top")
+    c.rect(ax + 10, chin + 2, 2, 4, "case_deep")
+    c.rect(ax + 20, chin + 3, 3, 3, "led")
+    for k in range(4):
+        c.rect(ax + 48 + k * 9, chin + 3, 6, 3, "case_deep")
+    # The mounting area: the casing's underside is in shadow where the
+    # support is received, right above the joint that emerges beneath it.
+    c.hline(ax + 2, bx - 2, by - 1, "case_deep")
+    return {"x": sx, "y": sy, "w": sw, "h": sh}
 
-    c.outline_poly(top, o)
-    c.outline_poly(side, o)
-    c.frame(fx, fy, fw, fh, o)
-    return foot
+
+# -------------------------------------------------------------------- tower
 
 
-def draw_tower(c, fx, fy, fw, fh, dx, dy):
-    """An upright case: optical bay, floppy slot, power button, LED, vents, feet."""
+def draw_tower(c, p, t):
+    """An upright case: optical bay, floppy slot, vents, power button, LED."""
     o = "outline"
-    side = [(fx, fy), (fx - dx, fy - dy), (fx - dx, fy + fh - dy), (fx, fy + fh)]
-    c.poly(side, "case_side")
-    for i in range(4):
-        vy = fy + 30 + i * 7
-        c.line(fx - 4, vy, fx - dx + 4, vy - (dy - 5), "case_deep")
+    x, w, h, z, d = (t[k] for k in ("x", "w", "h", "z", "d"))
+    S, T, F = draw_box(c, p, x, x + w - 1, 0, h - 1, z, z + d)
+    fx, fy, bx, by = F
+    fw, fh = bx - fx + 1, by - fy + 1
+    for k in range(4):                       # side vents, along the depth
+        yy = 30 + k * 9
+        a, b = p(x, yy, z + 6), p(x, yy, z + d - 8)
+        c.line(a[0], a[1], b[0], b[1], "case_deep")
 
-    top = [(fx, fy), (fx + fw, fy), (fx + fw - dx, fy - dy), (fx - dx, fy - dy)]
-    c.poly(top, "case_top")
-
-    c.rect(fx, fy, fw, fh, "case_front")
-    c.hline(fx + 1, fx + fw - 2, fy + 1, "case_edge")
-    c.vline(fx + 1, fy + 1, fy + fh - 2, "case_edge")
-
-    # optical drive with a tray line and an eject button, floppy slot beneath
-    c.rect(fx + 5, fy + 7, fw - 10, 7, "case_deep")
+    c.rect(fx + 5, fy + 7, fw - 10, 7, "case_deep")       # optical drive
     c.rect(fx + 6, fy + 9, fw - 18, 2, "case_top")
     c.rect(fx + fw - 10, fy + 10, 3, 2, "case_edge")
-    c.rect(fx + 5, fy + 17, fw - 10, 5, "case_deep")
+    c.rect(fx + 5, fy + 17, fw - 10, 5, "case_deep")      # floppy slot
     c.rect(fx + 6, fy + 19, fw - 19, 2, "case_top")
-
-    vent_top, vent_end = fy + 24, fy + fh - 20      # between the floppy and the
-    for i in range(max(0, min(4, (vent_end - vent_top) // 5))):   # power button
-        c.rect(fx + 6, vent_top + i * 5, fw - 12, 2, "case_deep")
-
-    c.frame(fx + 6, fy + fh - 16, 9, 9, o)              # power button
+    for k in range(4):                                     # vents
+        c.rect(fx + 6, fy + 26 + k * 5, fw - 12, 2, "case_deep")
+    c.frame(fx + 6, fy + fh - 16, 9, 9, o)                 # power button
     c.rect(fx + 7, fy + fh - 15, 7, 7, "case_top")
     c.rect(fx + 9, fy + fh - 13, 3, 3, "case_deep")
-    c.rect(fx + fw - 6, fy + fh - 12, 3, 3, "led")      # indicator
-
-    c.outline_poly(top, o)
-    c.outline_poly(side, o)
-    c.frame(fx, fy, fw, fh, o)
-
-    c.rect(fx, fy + fh, fw, 3, "case_deep")             # feet, and the dark
-    c.rect(fx + 8, fy + fh, fw - 16, 2, "desk_side")    # gap between them
+    c.rect(fx + fw - 6, fy + fh - 12, 3, 3, "led")         # indicator
+    c.hline(fx + 2, bx - 2, by - 1, "case_deep")           # feet, in shadow
 
 
-def draw_keyboard(c, x0, x1, y, dx, dy):
-    """A cased keyboard: a deck, a left end, a front lip, and raised keycaps.
+# ----------------------------------------------------------------- keyboard
+# A full-size ANSI layout in key units, nearest row first. Each key is
+# (u, width, kind): 'k' a plain cap, 'm' a modifier or cluster key, 't' a
+# tall numpad key that spans this row and the one behind it. Row 5 is the
+# function row, set half a unit further back. The main block is 15u; the
+# navigation cluster starts at 15.5u; the numeric keypad at 19u; 23u in all.
 
-    Each key is a solid, not a tile: a lit top face, a front face turned toward
-    us, and the shadow it drops on the deck behind the key in front of it. Rows
-    are drawn BACK TO FRONT so a nearer row occludes the one behind it, which is
-    what stops the caps reading as a flat printed grid.
+ANSI_ROWS = [
+    # bottom: Ctrl Win Alt Space Alt Win Menu Ctrl | Left Down Right | 0 . Enter
+    [(0, 1.25, "m"), (1.25, 1.25, "m"), (2.5, 1.25, "m"), (3.75, 6.25, "m"),
+     (10, 1.25, "m"), (11.25, 1.25, "m"), (12.5, 1.25, "m"), (13.75, 1.25, "m"),
+     (15.5, 1, "m"), (16.5, 1, "m"), (17.5, 1, "m"),
+     (19, 2, "m"), (21, 1, "k"), (22, 1, "t")],
+    # Shift row | Up | 1 2 3
+    [(0, 2.25, "m")] + [(2.25 + i, 1, "k") for i in range(10)] + [(12.25, 2.75, "m"),
+     (16.5, 1, "m"),
+     (19, 1, "k"), (20, 1, "k"), (21, 1, "k")],
+    # Caps row, Enter | 4 5 6 +
+    [(0, 1.75, "m")] + [(1.75 + i, 1, "k") for i in range(11)] + [(12.75, 2.25, "m"),
+     (19, 1, "k"), (20, 1, "k"), (21, 1, "k"), (22, 1, "t")],
+    # Tab row, backslash | Del End PgDn | 7 8 9
+    [(0, 1.5, "m")] + [(1.5 + i, 1, "k") for i in range(12)] + [(13.5, 1.5, "m"),
+     (15.5, 1, "m"), (16.5, 1, "m"), (17.5, 1, "m"),
+     (19, 1, "k"), (20, 1, "k"), (21, 1, "k")],
+    # number row, Backspace | Ins Home PgUp | NumLk / * -
+    [(i, 1, "k") for i in range(13)] + [(13, 2, "m"),
+     (15.5, 1, "m"), (16.5, 1, "m"), (17.5, 1, "m"),
+     (19, 1, "m"), (20, 1, "m"), (21, 1, "m"), (22, 1, "m")],
+    # function row: Esc, F1-F4, F5-F8, F9-F12 | PrtSc ScrLk Pause
+    [(0, 1, "m"), (2, 1, "m"), (3, 1, "m"), (4, 1, "m"), (5, 1, "m"),
+     (6.5, 1, "m"), (7.5, 1, "m"), (8.5, 1, "m"), (9.5, 1, "m"),
+     (11, 1, "m"), (12, 1, "m"), (13, 1, "m"), (14, 1, "m"),
+     (15.5, 1, "m"), (16.5, 1, "m"), (17.5, 1, "m")],
+]
+F_ROW_GAP = 4          # half a key unit, in depth units
+
+
+def draw_keyboard(c, p, kb):
+    """The housing as a shallow wedge, then the layout projected onto its deck.
+
+    The layout lives in key units (ANSI_ROWS) and is placed on the deck with
+    one x unit and one z unit; the projection does the rest, so every row gets
+    the same slope and spacing. Each cap is a lit top three rows deep, stepped
+    on the projection's own line, over a one-row front, in a dark well with a
+    one-unit gap around it. Nothing is lettered: at this size the shapes and
+    the grouping are what read.
     """
     o = "outline"
-    lip_h = 7
-    deck = [(x0, y), (x1, y), (x1 - dx, y - dy), (x0 - dx, y - dy)]
-    left = [(x0, y), (x0 - dx, y - dy), (x0 - dx, y - dy + lip_h), (x0, y + lip_h)]
-    lip = [(x0, y), (x1, y), (x1, y + lip_h), (x0, y + lip_h)]
-    c.poly(left, "case_deep")                   # the end turned furthest away
-    c.poly(lip, "case_side")
-    c.poly(deck, "case_front")
-    c.hline(x0 + 1, x1 - 1, y + 1, "case_edge")   # catch-light on the front edge
-    c.hline(x0 + 1, x1 - 1, y + lip_h - 1, "case_deep")   # the underside, in shadow
+    x, w, z0, d, hf, hb, ux, uz, full = (kb[k] for k in ("x", "w", "z", "d", "hf", "hb", "ux", "uz", "full"))
+    x1, z1 = x + w - 1, z0 + d
 
-    rows = [
-        [1.4, 1.1, 1.1, 6.0, 1.1, 1.1, 1.4],        # the space bar, nearest
-        [1.6] + [1] * 10 + [2.0],
-        [1.4] + [1] * 11 + [1.4],
-        [1] * 13,
-        [1.2] + [0.8] * 12,                         # function row, furthest back
-    ]
-    n = len(rows)
-    step_y, step_x = dy / (n + 0.8), dx / (n + 0.8)
-    for r in reversed(range(n)):                    # back row first
-        weights = rows[r]
-        ry = int(y - 5 - r * step_y)
-        rx = int(x0 + 7 - r * step_x)
-        right = int(x1 - 7 - r * step_x)
-        unit = (right - rx) / sum(weights)
-        kx = rx
-        for weight in weights:
-            kw = max(3, int(weight * unit) - 1)
-            if kx + kw > right:
-                break
-            c.rect(kx, ry - 2, kw, 2, "key_top")            # the cap's lit top
-            c.hline(kx, kx + kw - 1, ry, "key_side")        # the face toward us
-            c.hline(kx, kx + kw - 1, ry + 1, "case_deep")   # the shadow it drops
-            kx += int(weight * unit)
+    def deck_y(z):
+        return hf + (z - z0) * (hb - hf) / d
 
+    side = [p(x, 0, z0), p(x, hf, z0), p(x, hb, z1), p(x, 0, z1)]
+    deck = [p(x, hf, z0), p(x1, hf, z0), p(x1, hb, z1), p(x, hb, z1)]
+    c.poly(side, "case_side")
+    c.poly(deck, "case_top")
+    ax, ay, bx, by = face_rect(c, p, x, x1, 0, hf, z0, "case_front")
+    c.hline(ax + 1, bx - 1, ay + 1, "case_edge")
+
+    rows = ANSI_ROWS if full else ANSI_ROWS[:5]
+    kx0, kz0 = x + (w - 23 * ux) // 2 if full else x + (w - 15 * ux) // 2, z0 + 6
+    clusters = ((0, 15), (15.5, 18.5), (19, 23)) if full else ((0, 15),)
+
+    def row_z(r):
+        return kz0 + r * uz + (F_ROW_GAP if r == 5 else 0)
+
+    z_far = row_z(len(rows) - 1) + uz - 1
+    for u0, u1 in clusters:
+        c.poly([p(kx0 + u0 * ux - 1, deck_y(kz0 - 2), kz0 - 2),
+                p(kx0 + u1 * ux, deck_y(kz0 - 2), kz0 - 2),
+                p(kx0 + u1 * ux, deck_y(z_far), z_far),
+                p(kx0 + u0 * ux - 1, deck_y(z_far), z_far)], "case_deep")
+
+    def key(u, width, r, kind):
+        z = row_z(r)
+        depth = (2 * uz if kind == "t" else uz) - 2
+        top_rows = 3 + (5 if kind == "t" else 0)
+        kx = kx0 + u * ux
+        kw = round(width * ux) - 1
+        near = round(p.y0 - (deck_y(z) + 1.5) - z / 2)
+        tone = "case_front" if kind == "m" else "key_top"
+        for k in range(top_rows):
+            zk = z + depth * k / max(1, top_rows - 1)
+            a = round(p.x0 + kx - zk / 6)
+            c.hline(a, a + kw - 1, near - k, tone)
+        a = round(p.x0 + kx - z / 6)
+        c.hline(a, a + kw - 1, near + 1, "key_side")
+
+    for r in reversed(range(len(rows))):
+        for u, width, kind in rows[r]:
+            if full or u + width <= 15:
+                key(u, width, r, kind)
     c.outline_poly(deck, o)
-    c.outline_poly(left, o)
-    c.outline_poly(lip, o)
+    c.outline_poly(side, o)
+    c.frame(ax, ay, bx - ax + 1, by - ay + 1, o)
 
 
-def draw_mouse(c, x, y, w, d):
-    """An old wired mouse: two buttons and a wheel at the far end, palm nearest.
+# -------------------------------------------------------------------- mouse
+# A wired mouse used the way a person facing the monitor uses it: buttons and
+# cable at the FAR end, the rounded palm nearest us. Its shell is a height
+# field over a pebble-shaped footprint: a longitudinal profile that rises
+# quickly from the rear to the palm and falls to a low nose, times a rounded
+# cross-section, with near-vertical walls up to about half the height.
 
-    (x, y) is the near edge of the shell; the body hangs five rows below it, so
-    the contact point is y + 6.
+#
+# The buttons slope only gently toward the nose. From this elevation a steep
+# front would be seen almost edge-on and the seam, division and wheel would
+# collapse into two rows; a front that stays high, as on a traditional
+# two-button mouse, keeps the two button surfaces readable.
+MOUSE_PROFILE = [(0.0, 0.35), (0.05, 0.65), (0.15, 0.92), (0.26, 1.0), (0.4, 0.97),
+                 (0.54, 0.91), (0.7, 0.86), (0.84, 0.8), (0.94, 0.74), (1.0, 0.6)]
+MOUSE_SEAM = 0.52      # where the palm ends and the two buttons begin
+MOUSE_WHEEL = (0.76, 0.92)
 
-    The silhouette is stepped rather than cut on a straight bevel - two pixels
-    in, then one, at each corner - which is what gives it a rounded read at this
-    size. Inside it, value separation does the rest: a mid-tone shell, two lit
-    button pads, a dark split that runs all the way to the far edge, one bright
-    pixel for the wheel, and a dark underside so it sits ON the desk.
+
+def curve(pts, u):
+    for (u0, v0), (u1, v1) in zip(pts, pts[1:]):
+        if u0 <= u <= u1:
+            t = (u - u0) / (u1 - u0)
+            t = t * t * (3 - 2 * t)
+            return v0 + (v1 - v0) * t
+    return pts[-1][1]
+
+
+def mouse_shape(m):
+    x, w, z0, length, hmax = (m[k] for k in ("x", "w", "z", "length", "hmax"))
+    cx = x + (w - 1) / 2
+
+    def half(t):                       # footprint half-width: rounded both ends
+        return (w - 1) / 2 * (0.62 + 0.38 * math.sin(math.pi * t) ** 0.6)
+
+    def height(t, u):                  # u across the width, -1..1
+        base = hmax * curve(MOUSE_PROFILE, t)
+        return base * (0.5 + 0.5 * math.sqrt(max(0.0, 1 - u * u)))
+
+    return cx, half, height
+
+
+def mouse_contact(c, p, m):
+    cx, half, _ = mouse_shape(m)
+    z0 = m["z"]
+    contact(c, p, cx - half(0), cx + half(0), z0)
+    cast(c, p, cx + half(0.5), z0 + 4, z0 + m["length"] - 6, width=6)
+
+
+def draw_mouse(c, p, m):
+    """Rear to nose, far to near, one continuous shell.
+
+    Each cross-section is drawn from far to near so nearer material covers
+    farther: the left wall, then the top across the width. The rear wall
+    facing us closes the shell. Then the details on the top: the seam
+    between palm and buttons, the division between the buttons running to
+    the nose, and the wheel set into that division near the nose.
     """
-    o = "outline"
-    fx = x - d * 2                              # far edge: d back, so 2d left
-    s = d // 2                                  # the buttons take the far half
-    sx, sy = x - s * 2, y - s
+    layer = c.__class__(c.w, c.h, c.palette)
+    cx, half, height = mouse_shape(m)
+    z0, length, w = m["z"], m["length"], m["w"]
+    for z in frange(z0 + length, z0, -0.5):
+        t = (z - z0) / length
+        hw = half(t)
+        wall = height(t, 0) * 0.5
+        for y in frange(0, wall):
+            layer.set(*p(cx - hw, y, z), "case_side")
+        for x in frange(cx - hw, cx + hw):
+            u = (x - cx) / hw if hw else 0
+            key = "case_top"
+            if u < -0.78:
+                key = "case_side"
+            elif u > 0.84:
+                key = "case_front"
+            layer.set(*p(x, height(t, u), z), key)
+    hw = half(0)
+    for x in frange(cx - hw, cx + hw):
+        u = (x - cx) / hw
+        for y in frange(0, height(0, u)):
+            layer.set(*p(x, y, z0), "case_front")
+    # the seam between palm and buttons, across the shell
+    zs = z0 + MOUSE_SEAM * length
+    hw = half(MOUSE_SEAM)
+    for x in frange(cx - hw + 1, cx + hw - 1):
+        u = (x - cx) / hw
+        layer.set(*p(x, height(MOUSE_SEAM, u) + 0.3, zs), "case_deep")
+    # the division between the two buttons, to the nose
+    for z in frange(zs, z0 + length - 1.5):
+        t = (z - z0) / length
+        layer.set(*p(cx, height(t, 0) + 0.3, z), "case_deep")
+    # the wheel, set into the division
+    ww = max(3, round(w * 0.16))
+    for z in frange(z0 + MOUSE_WHEEL[0] * length, z0 + MOUSE_WHEEL[1] * length):
+        t = (z - z0) / length
+        for x in frange(cx - ww / 2, cx + ww / 2):
+            layer.set(*p(x, height(t, (x - cx) / half(t)) + 0.3, z), "case_deep")
+    wz = z0 + MOUSE_WHEEL[0] * length
+    layer.set(*p(cx - ww / 2 + 0.5, height(MOUSE_WHEEL[0], 0) + 0.3, wz), "case_edge")
+    composite(c, layer)
 
-    shell = [
-        (x + 4, y), (x + w - 4, y),             # the near edge
-        (x + w - 2, y - 1), (x + w - 1, y - 3),  # stepped corner
-        (fx + w - 2, y - d + 2), (fx + w - 4, y - d),
-        (fx + 4, y - d), (fx + 2, y - d + 2),
-        (x + 1, y - 3), (x + 2, y - 1),          # stepped corner
-    ]
-    c.poly(shell, "case_front")
-    c.line(x + 3, y - 1, fx + 5, y - d + 1, "case_edge")    # the lit left flank
 
-    pads = [(fx + 4, y - d + 1), (fx + w - 4, y - d + 1), (sx + w - 4, sy), (sx + 4, sy)]
-    c.poly(pads, "case_top")
-    c.hline(sx + 5, sx + w - 5, sy + 1, "case_deep")        # seam behind the buttons
-    c.line(sx + w // 2, sy, fx + w // 2, y - d, "case_deep")  # the split between them
-
-    wx, wy = sx + w // 2 - 4, sy - 4                        # the wheel, in the split
-    c.rect(wx, wy, 3, 4, "case_deep")
-    c.rect(wx + 1, wy + 1, 1, 2, "case_edge")
-
-    c.rect(x + 3, y + 1, w - 6, 4, "case_side")             # the body
-    c.vline(x + 4, y + 1, y + 3, "case_front")              # lit on the left
-    c.hline(x + 4, x + w - 4, y + 4, "case_deep")           # dark underside
-    c.outline_poly(shell, o)
-    c.hline(x + 4, x + w - 4, y + 5, o)
-    c.vline(x + 3, y, y + 5, o)
-    c.vline(x + w - 3, y, y + 5, o)
+# ------------------------------------------------------------------- cables
 
 
-def draw_cable(c, p0, p1, p2, steps=200):
-    """A quadratic curve sampled onto the grid: stepped pixels, never smoothed.
+def draw_cable(c, p, pts, steps=240):
+    """A quadratic curve through three desk-space points, sampled onto the grid.
 
-    One outline pixel with a dark one under it. Three was thick enough that the
-    flatter stretches stacked into a slab and competed with the objects.
+    One outline pixel with a dark one under it. Cables are drawn before the
+    equipment, so each starts hidden under its own object and ends inside the
+    tower: nothing terminates in open tabletop.
     """
+    (ax, ay), (bx, by), (cx, cy) = (p(*q) for q in pts)
     prev = None
     for i in range(steps + 1):
         t = i / steps
-        x = (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0]
-        y = (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1]
+        x = (1 - t) ** 2 * ax + 2 * (1 - t) * t * bx + t * t * cx
+        y = (1 - t) ** 2 * ay + 2 * (1 - t) * t * by + t * t * cy
         pt = (round(x), round(y))
         if pt != prev:
             c.set(pt[0], pt[1], "outline")
@@ -382,103 +557,91 @@ def draw_cable(c, p0, p1, p2, steps=200):
         prev = pt
 
 
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------- the scenes
+
+
+def draw_layout(c, L):
+    p = View(*L["origin"])
+    D, M, T, K, MO = L["desk"], L["monitor"], L["tower"], L["keyboard"], L["mouse"]
+    legs = D.get("legs") or desk_legs(D["x0"], D["x1"], D["d"], D["leg"], D["inset"])
+    draw_desk(c, p, D["x0"], D["x1"], D["d"], D["t"], D["leg"], legs)
+
+    plate = L["stand"]["plate"]
+    cast(c, p, plate["x"] + plate["w"], plate["z"], plate["z"] + plate["d"] - 20)
+    cast(c, p, T["x"] + T["w"] - 1, T["z"], T["z"] + T["d"] - 30)
+    cast(c, p, K["x"] + K["w"] - 1, K["z"], K["z"] + K["d"] - 8, width=6)
+    contact(c, p, plate["x"] + plate["r"], plate["x"] + plate["w"] - plate["r"], plate["z"])
+    contact(c, p, T["x"], T["x"] + T["w"] - 1, T["z"])
+    contact(c, p, K["x"], K["x"] + K["w"] - 1, K["z"])
+    mouse_contact(c, p, MO)
+
+    for pts in L["cables"].values():
+        draw_cable(c, p, pts)
+
+    draw_tower(c, p, T)
+    screen = draw_monitor(c, p, M, L["stand"])
+    draw_keyboard(c, p, K)
+    draw_mouse(c, p, MO)
+    return p, screen
+
+
+# --- wide framing -----------------------------------------------------------
+# 576 x 330. At 2x it displays as 1152 x 660, which still fits a 1280 x 720
+# window; at 3x it fits 1920 x 1080. Desk space: the tabletop's front-left
+# corner is at canvas (48, 292).
+
+W, H = 576, 330
+
+WIDE = dict(
+    origin=(48, 292),
+    desk=dict(x0=0, x1=521, d=250, t=12, leg=14, inset=12),
+    monitor=dict(x=142, w=132, y=28, h=118, z=102, bezel_d=30,
+                 rear=dict(inset=10, top=10, bottom=10, d=108),
+                 screen=dict(x=12, y=26, w=108, h=81)),
+    stand=dict(plate=dict(x=164, w=88, z=108, d=96, h=5, r=10),
+               housing=dict(cx=208, cz=132, r0=16, r1=12, y0=5, y1=28)),
+    tower=dict(x=324, w=66, h=140, z=108, d=138),
+    keyboard=dict(x=194, w=198, z=6, d=64, hf=6, hb=14, ux=8, uz=8, full=True),
+    mouse=dict(x=424, w=27, z=14, length=50, hmax=16),
+    cables=dict(monitor=[(274, 0, 200), (304, 0, 190), (324, 0, 170)],
+                keyboard=[(364, 0, 74), (354, 0, 96), (342, 4, 108)],
+                mouse=[(437, 2, 58), (448, 0, 100), (354, 4, 108)]),
+)
 
 
 def draw_scene(c):
-    """Wide framing: desk, monitor left, tower right, keyboard and wired mouse."""
-    draw_desk(c, DESK_FX0, DESK_FX1, DESK_FY, DESK_DX, DESK_DY, DESK_LIP,
-              DESK_FOOT, DESK_LEGS)
-
-    cx = MON_X + MON_W // 2
-    cast(c, cx - 37, cx + 27, MON_BASE_Y, 5)
-    cast(c, TOW_X - TOW_DX, TOW_X + TOW_W, TOW_Y + TOW_H + 3, 5)
-    contact(c, cx - 37, cx + 27, MON_BASE_Y)
-    contact(c, TOW_X - TOW_DX - 1, TOW_X + TOW_W + 1, TOW_Y + TOW_H + 3)
-    contact(c, KB_X0 - 1, KB_X1 + 1, KB_Y + 7)
-    contact(c, MOUSE_X - 2, MOUSE_X + MOUSE_W + 1, MOUSE_Y + 6)
-
-    # Cables are drawn before the objects, so they pass behind them.
-    for arc in MON_CABLE + KB_CABLE + MOUSE_CABLE:
-        draw_cable(c, *arc)
-
-    draw_tower(c, TOW_X, TOW_Y, TOW_W, TOW_H, TOW_DX, TOW_DY)
-    draw_monitor(c, MON_X, MON_Y, MON_W, MON_H, MON_DX, MON_DY,
-                 SCREEN_X, SCREEN_Y, SCREEN_W, SCREEN_H, MON_BASE_Y)
-    draw_keyboard(c, KB_X0, KB_X1, KB_Y, KB_DX, KB_DY)
-    draw_mouse(c, MOUSE_X, MOUSE_Y, MOUSE_W, MOUSE_D)
-
-    return {"screen": {"x": SCREEN_X, "y": SCREEN_Y, "w": SCREEN_W, "h": SCREEN_H},
-            "canvas": {"w": W, "h": H},
-            "desk": desk_plan(H, DESK_FY, DESK_DY, DESK_LIP)}
+    """Wide framing: a freestanding desk, monitor left, tower right, keyboard and wired mouse."""
+    p, screen = draw_layout(c, WIDE)
+    return {"screen": screen, "canvas": {"w": W, "h": H}, "desk": None}
 
 
 # --- narrow framing ---------------------------------------------------------
-# Not a shrunken copy, and not the same canvas at a smaller scale either.
-#
-# Raster pixel art is only ever shown at a whole-number multiple, so the canvas
-# WIDTH decides the scale a phone can reach: 120 divides 360 exactly and fits
-# three times into 390, 412 and 430, so every common phone lands on 3x. A wider
-# canvas would drop to 2x on the same screens and the tube would come out
-# SMALLER in real pixels despite the picture being bigger on the grid.
-#
-# Inside that 120 the monitor takes what it needs to stay readable, the tower
-# stands behind and to the right of it and shows the part of itself that is not
-# hidden by the monitor, and the keyboard and mouse sit in front. Contact
-# points, front to back: 98 tower, 104 monitor base, 109 keyboard back, 124
-# mouse, 128 the desk's front edge.
+# 180 x 252, the same projection at a smaller equipment scale. It displays at
+# 360 x 504 (2x) on 360–430px phones. The desk runs off both sides here - a
+# phone cannot hold a desk with ends and a readable monitor at once - and the
+# page continues its rows to the viewport edges from desk_plan().
 
-CW, CH = 120, 168
-C_DESK_FY, C_DESK_DX, C_DESK_DY = 128, 76, 38
-C_DESK_FX0, C_DESK_FX1 = -40, 200
-C_DESK_LIP = 7
-C_DESK_FOOT = CH + 4
-C_DESK_LEGS = (20, 84)
+CW, CH = 180, 252
 
-C_MON_X, C_MON_Y, C_MON_W, C_MON_H = 12, 8, 80, 70
-C_MON_DX, C_MON_DY = 10, 5
-C_SCREEN_X, C_SCREEN_Y, C_SCREEN_W, C_SCREEN_H = 20, 15, 64, 48
-C_MON_BASE_Y = 104
-
-C_TOW_X, C_TOW_Y, C_TOW_W, C_TOW_H = 96, 48, 20, 50
-C_TOW_DX, C_TOW_DY = 8, 4
-
-C_KB_X0, C_KB_X1, C_KB_Y = 18, 94, 120
-C_KB_DX, C_KB_DY = 24, 12
-C_MOUSE_X, C_MOUSE_Y, C_MOUSE_W, C_MOUSE_D = 96, 119, 20, 4
-
-C_MON_CABLE = [((60, 102), (78, 100), (94, 94))]
-C_KB_CABLE = [((56, 115), (76, 110), (98, 94))]
-# The compact tower stands almost directly above the mouse, so a single arc
-# between them would be a straight vertical line and read as a pole. Two chained
-# arcs give the cable the slack a real one has: out to the left across the
-# tabletop, then back up and behind the case.
-C_MOUSE_CABLE = [((102, 121), (94, 115), (86, 110)),
-                 ((86, 110), (88, 102), (98, 95))]
+COMPACT = dict(
+    origin=(8, 223),
+    desk=dict(x0=-60, x1=240, d=176, t=9, leg=12, legs=[(6, 10, False), (148, 10, False)]),
+    monitor=dict(x=12, w=120, y=21, h=109, z=84, bezel_d=24,
+                 rear=dict(inset=8, top=8, bottom=8, d=60),
+                 screen=dict(x=12, y=23, w=96, h=72)),
+    stand=dict(plate=dict(x=32, w=80, z=90, d=60, h=4, r=8),
+               housing=dict(cx=72, cz=108, r0=13, r1=10, y0=4, y1=21)),
+    tower=dict(x=140, w=34, h=80, z=90, d=84),
+    keyboard=dict(x=22, w=96, z=6, d=50, hf=5, hb=11, ux=6, uz=8, full=False),
+    mouse=dict(x=134, w=18, z=12, length=34, hmax=11),
+    cables=dict(monitor=[(124, 0, 140), (137, 0, 130), (142, 0, 120)],
+                keyboard=[(90, 0, 60), (110, 0, 76), (150, 4, 90)],
+                mouse=[(143, 2, 40), (152, 0, 70), (152, 4, 90)]),
+)
 
 
 def draw_scene_compact(c):
-    draw_desk(c, C_DESK_FX0, C_DESK_FX1, C_DESK_FY, C_DESK_DX, C_DESK_DY,
-              C_DESK_LIP, C_DESK_FOOT, C_DESK_LEGS, leg_w=10)
-
-    cx = C_MON_X + C_MON_W // 2
-    cast(c, cx - 26, cx + 18, C_MON_BASE_Y, 4)
-    cast(c, C_TOW_X - C_TOW_DX, C_TOW_X + C_TOW_W, C_TOW_Y + C_TOW_H + 3, 4)
-    contact(c, cx - 26, cx + 18, C_MON_BASE_Y)
-    contact(c, C_TOW_X - C_TOW_DX - 1, C_TOW_X + C_TOW_W + 1, C_TOW_Y + C_TOW_H + 3)
-    contact(c, C_KB_X0 - 1, C_KB_X1 + 1, C_KB_Y + 7)
-    contact(c, C_MOUSE_X - 2, C_MOUSE_X + C_MOUSE_W + 1, C_MOUSE_Y + 6)
-
-    for arc in C_MON_CABLE + C_KB_CABLE + C_MOUSE_CABLE:
-        draw_cable(c, *arc)
-
-    draw_tower(c, C_TOW_X, C_TOW_Y, C_TOW_W, C_TOW_H, C_TOW_DX, C_TOW_DY)
-    draw_monitor(c, C_MON_X, C_MON_Y, C_MON_W, C_MON_H, C_MON_DX, C_MON_DY,
-                 C_SCREEN_X, C_SCREEN_Y, C_SCREEN_W, C_SCREEN_H, C_MON_BASE_Y,
-                 stand=dict(collar=14, foot=19, collar_h=6, dx=6, dy=3))
-    draw_keyboard(c, C_KB_X0, C_KB_X1, C_KB_Y, C_KB_DX, C_KB_DY)
-    draw_mouse(c, C_MOUSE_X, C_MOUSE_Y, C_MOUSE_W, C_MOUSE_D)
-
-    return {"screen": {"x": C_SCREEN_X, "y": C_SCREEN_Y, "w": C_SCREEN_W, "h": C_SCREEN_H},
-            "canvas": {"w": CW, "h": CH},
-            "desk": desk_plan(CH, C_DESK_FY, C_DESK_DY, C_DESK_LIP)}
+    p, screen = draw_layout(c, COMPACT)
+    D = COMPACT["desk"]
+    return {"screen": screen, "canvas": {"w": CW, "h": CH},
+            "desk": desk_plan(CH, p.y0, D["d"] // 2, D["t"])}

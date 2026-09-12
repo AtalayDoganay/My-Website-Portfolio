@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atalay Doganay — artwork and sound review</title>
+<style>
+  * { box-sizing:border-box }
+  body { margin:32px; background:#10152b; color:#e9edf5; font:16px/1.6 system-ui,sans-serif }
+  h1 { font-size:28px; font-weight:600 } h2 { margin-top:48px; font-size:22px }
+  p { max-width:850px } a { color:#b5def9 } figure { margin:0 }
+  figcaption { padding:12px 0 8px; color:#bac7de }
+  .scroll { overflow:auto; padding-bottom:16px }
+  .comparison { display:grid; grid-template-columns:max-content max-content; gap:24px; width:max-content; padding:16px; background:#10152b }
+  .comparison img { display:block; image-rendering:pixelated }
+  .row { display:flex; flex-wrap:wrap; gap:24px; align-items:start }
+  .dot { width:280px; height:130px; overflow:hidden; position:relative }
+  .dot img { position:absolute; width:1280px; max-width:none; left:-50px; top:-275px }
+  video { display:block; width:min(100%,1280px); background:black }
+  .layouts img { width:390px; max-width:100%; height:auto }
+  details { margin:24px 0 } summary { cursor:pointer; font-size:19px }
+</style>
+<h1>Artwork and sound refinement</h1>
+<p><a href="REVIEW.md">Implementation, results and verification limits</a> ·
+<a href="http://127.0.0.1:4321/">Open local preview</a></p>
+<p>These are captures from the working site. Before and after equipment use identical
+crop rectangles and a 2× display scale. Comparisons retain their native screenshot size;
+scroll horizontally on a narrow window.</p>
+
+<h2>Equipment — dark theme</h2>
+<div class="scroll"><div class="comparison" id="equipment-dark">
+  <figure><figcaption>Before · current tree at takeover</figcaption><img src="before/equipment-dark.png" alt="Before equipment in dark theme"></figure>
+  <figure><figcaption>After · same displayed scale</figcaption><img src="after/equipment-dark.png" alt="Redrawn support, keyboard and mouse in dark theme"></figure>
+</div></div>
+<div class="scroll"><div class="comparison">
+  <figure><figcaption>Support before</figcaption><img src="before/support-dark.png" alt="Stacked slab support before"></figure>
+  <figure><figcaption>Support after</figcaption><img src="after/support-dark.png" alt="Curved cradle and low base after"></figure>
+  <figure><figcaption>Keyboard before</figcaption><img src="before/keyboard-dark.png" alt="Band-like keys before"></figure>
+  <figure><figcaption>Keyboard after</figcaption><img src="after/keyboard-dark.png" alt="Individual oblique caps and separate groups after"></figure>
+  <figure><figcaption>Mouse before</figcaption><img src="before/mouse-dark.png" alt="Shallow mouse before"></figure>
+  <figure><figcaption>Mouse after</figcaption><img src="after/mouse-dark.png" alt="Raised palm, button seams and wheel after"></figure>
+</div></div>
+
+<h2>Equipment — light theme</h2>
+<div class="scroll"><div class="comparison" id="equipment-light">
+  <figure><figcaption>Before</figcaption><img src="before/equipment-light.png" alt="Before equipment in light theme"></figure>
+  <figure><figcaption>After · same displayed scale</figcaption><img src="after/equipment-light.png" alt="After equipment in light theme"></figure>
+</div></div>
+
+<h2>The pointing glove</h2>
+<p>A short index beside three folded fingers, a separate thumb and a violet cuff.
+The fingertip anchor sits over the press point while the palm is offset to its right.</p>
+<div class="row">
+  <figure><figcaption>Isolated · dark</figcaption><img src="after/hand-alone-dark.png" alt="Glove enlarged in dark theme"></figure>
+  <figure><figcaption>Isolated · light</figcaption><img src="after/hand-alone-light.png" alt="Glove enlarged in light theme"></figure>
+  <figure><figcaption>On the monitor · actual display size</figcaption><img src="after/hand-monitor-desktop-dark.png" alt="Glove touching the button on the dark monitor"><img src="after/hand-monitor-desktop-light.png" alt="Glove touching the button on the light monitor"></figure>
+</div>
+
+<h2>Individual deletion</h2>
+<p>After the third dot's hold: two dots at 1850ms, one at 1970ms, empty at 2090ms.
+These crops retain the full frame's scale. Open a crop for its full screenshot.</p>
+<div class="row">
+  <figure><figcaption>Three dots · holding</figcaption><a href="after/deletion-dark-3.png"><div class="dot"><img src="after/deletion-dark-3.png" alt="Three dots"></div></a></figure>
+  <figure><figcaption>1850ms · first backspace</figcaption><a href="after/deletion-dark-2.png"><div class="dot"><img src="after/deletion-dark-2.png" alt="Two dots"></div></a></figure>
+  <figure><figcaption>1970ms · second backspace</figcaption><a href="after/deletion-dark-1.png"><div class="dot"><img src="after/deletion-dark-1.png" alt="One dot"></div></a></figure>
+  <figure><figcaption>2090ms · third backspace</figcaption><a href="after/deletion-dark-0.png"><div class="dot"><img src="after/deletion-dark-0.png" alt="Empty line with caret"></div></a></figure>
+</div>
+<details><summary>Light-theme deletion</summary><div class="row">
+  <a class="dot" href="after/deletion-light-3.png"><img src="after/deletion-light-3.png" alt="Three dots, light"></a>
+  <a class="dot" href="after/deletion-light-2.png"><img src="after/deletion-light-2.png" alt="Two dots, light"></a>
+  <a class="dot" href="after/deletion-light-1.png"><img src="after/deletion-light-1.png" alt="One dot, light"></a>
+  <a class="dot" href="after/deletion-light-0.png"><img src="after/deletion-light-0.png" alt="Empty line, light"></a>
+</div></details>
+
+<h2>Recorded journey</h2>
+<p>Play with sound for the explicit replay, introduction, two invitation cycles,
+activation, desktop entry and return. The recording carries the measured master output.</p>
+<video controls preload="metadata" src="audio/full-journey.mp4"></video>
+<p><a href="audio/intro-invitation-audio.webm">Audio only</a> · <a href="audio/report.json">22 audio and lifecycle checks</a></p>
+<p>Reviewed visually through decoded recording frames. Digital output was measured;
+no perceptual listening pass was performed here. Speaker/headphone loudness, timbre,
+device latency and Safari/iOS audio remain unverified.</p>
+
+<h2>Phone layouts</h2>
+<div class="row layouts">
+  <figure><figcaption>390×844 · dark · touch</figcaption><img src="after/phone-dark.png" alt="Phone invitation in dark theme"></figure>
+  <figure><figcaption>390×844 · light · touch</figcaption><img src="after/phone-light.png" alt="Phone invitation in light theme"></figure>
+</div>
+<div class="row">
+  <figure><figcaption>Raised pose · dark</figcaption><img src="after/hand-raised-phone-dark.png" alt="Full raised glove fits the phone glass"></figure>
+  <figure><figcaption>Raised pose · light</figcaption><img src="after/hand-raised-phone-light.png" alt="Raised light glove fits the phone glass"></figure>
+</div>
+<details><summary>Landscape phone — usable 69×45 button</summary>
+  <img src="after/landscape-dark.png" width="844" alt="Landscape phone in dark theme">
+  <img src="after/landscape-light.png" width="844" alt="Landscape phone in light theme">
+</details>
+<p>Local review evidence only. Work remains uncommitted and is not deployed.</p>
+</html>

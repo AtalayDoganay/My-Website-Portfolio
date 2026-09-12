@@ -46,6 +46,47 @@ export const DOORWAY = [
 ];
 
 /**
+ * Build a sprite's silhouette and its interior from one description: the span
+ * of solid pixels on each row, as [x, width].
+ *
+ * A pixel is INTERIOR when it and its four neighbours are all solid, so the
+ * outline closes by itself - including where the silhouette steps in sharply,
+ * which is exactly where a hand-listed inset gets it wrong and leaves the
+ * outline open. Authoring a shape then means describing its profile once
+ * instead of keeping two lists of rectangles in agreement.
+ *
+ * @param {Array<[number, number] | null>} rows  one [x, width] per row, top down
+ * @returns {{ink: Array<[number,number,number,number]>, fill: Array<...>}}
+ */
+export function fromRows(rows) {
+  const solid = (x, y) => {
+    const span = rows[y];
+    return !!span && x >= span[0] && x < span[0] + span[1];
+  };
+  const ink = [];
+  const fill = [];
+  rows.forEach((span, y) => {
+    if (!span) return;
+    ink.push([span[0], y, span[1], 1]);
+    // Collect interior pixels into runs, so the SVG carries a rectangle per
+    // run rather than one per pixel.
+    let runStart = null;
+    for (let x = span[0]; x <= span[0] + span[1]; x += 1) {
+      const inside =
+        x < span[0] + span[1] &&
+        solid(x, y) && solid(x - 1, y) && solid(x + 1, y) &&
+        solid(x, y - 1) && solid(x, y + 1);
+      if (inside && runStart === null) runStart = x;
+      if (!inside && runStart !== null) {
+        fill.push([runStart, y, x - runStart, 1]);
+        runStart = null;
+      }
+    }
+  });
+  return { ink, fill };
+}
+
+/**
  * A two-tone sprite: the same integer grid, but an ink layer and a lit layer so
  * a shape can carry the design's one-unit outline without a second element.
  * The layers are classed rather than filled inline, so they take their colours
@@ -67,70 +108,32 @@ export function pixelSprite(layers, { w = 16, h = 16, className = '' } = {}) {
        aria-hidden="true" focusable="false" shape-rendering="crispEdges">${body}</svg>`;
 }
 
-// A gloved hand pointing down and to the right, on a 12 x 16 native grid.
-//
-// Proportions come from Kenney's CC0 Cursor Pixel Pack (tiles 0134-0137,
-// inspected at 26x): the index finger is SHORT and THICK against a chunky
-// rectangular palm - about three pixels wide and five long against a nine by
-// seven palm - and the read comes from the silhouette and its outline rather
-// than from internal detail. A long thin finger on a round palm is what made
-// the previous pointer look like a balloon on a stick. Nothing is copied: the
-// pack's cursors are flat white, and this one is drawn in our own palette with
-// a cuff, folded fingers, and deliberate highlight and shadow pixels.
-//
-// Layers paint in order: ink (silhouette), fill (glove), cuff, dim, hi.
-export const HAND_POINT = {
-  ink: [
-    [3, 0, 6, 1], [2, 1, 8, 2], [1, 3, 10, 2],
-    [0, 5, 11, 3],                              // the thumb, out to the left
-    [1, 8, 10, 1],
-    [2, 9, 9, 2],                               // the palm's closed bottom edge
-    [6, 11, 5, 1], [7, 12, 4, 2], [8, 14, 3, 2],
-  ],
-  fill: [
-    [3, 1, 6, 2],
-    [2, 3, 8, 2], [1, 5, 9, 3], [2, 8, 8, 1], [3, 9, 7, 1],
-    [7, 10, 3, 4], [8, 14, 2, 1],               // a short, THICK finger
-  ],
-  cuff: [[3, 1, 6, 2]],                         // a small band at the wrist
-  dim: [
-    [9, 4, 1, 5], [9, 9, 1, 1],                 // the shaded right flank
-    [9, 12, 1, 2],                              // and down the finger
-    [4, 9, 1, 1], [6, 9, 1, 1],                 // creases: three folded fingers
-  ],
-  hi: [
-    [2, 4, 1, 1], [1, 5, 1, 2],                 // lit upper left, on the thumb
-    [3, 3, 4, 1],
-    [7, 10, 1, 3],
-  ],
-};
+// A friendly pointing glove. The SHORT index is on the thumb side of the
+// palm; three curled fingers sit together to its right. The thumb wraps in
+// from the left. Placement uses the fingertip, never the centre of the palm.
+export const HAND_ANCHOR = { w: 22, h: 24, x: 7.5, y: 24 };
+const HAND_PRESS_ROWS = [
+  [8, 9], [7, 11], [7, 11], [7, 11], [7, 11], // cuff
+  [6, 13], [5, 15], [3, 18], [2, 19],          // palm and thumb
+  [1, 21], [1, 21], [1, 21], [2, 20],
+  [4, 18], [5, 17], [5, 17], [5, 16], [5, 14], // three folded fingers
+  [5, 5], [5, 5], [5, 5], [5, 5], [5, 5], [6, 3], // index and round tip
+];
 
-// The same glove mirrored to point down and to the LEFT, for a hand that sits
-// above and to the right of the button it is demonstrating. Mirrored geometry,
-// but the highlights and shadows are re-authored rather than flipped: the light
-// stays up and to the left, so the lit edge belongs on the left of the new
-// silhouette and the shaded flank on its right.
-export const HAND_POINT_LEFT = {
-  ink: [
-    [3, 0, 6, 1], [2, 1, 8, 2], [1, 3, 10, 2],
-    [1, 5, 11, 3],                              // the thumb, out to the right
-    [1, 8, 10, 1], [1, 9, 9, 2],
-    [1, 11, 5, 1], [1, 12, 4, 2], [1, 14, 3, 2],
-  ],
-  fill: [
-    [3, 1, 6, 2], [2, 3, 8, 2], [2, 5, 9, 3],
-    [2, 8, 8, 1], [2, 9, 7, 1],
-    [2, 10, 3, 4], [2, 14, 2, 1],
-  ],
-  cuff: [[3, 1, 6, 2]],
+export const HAND_PRESS = {
+  ...fromRows(HAND_PRESS_ROWS),
+  cuff: [[8, 1, 9, 3]],
   dim: [
-    [9, 4, 1, 6], [9, 10, 1, 1],                // the shaded right flank
-    [4, 11, 1, 3],                              // and down the right of the finger
-    [5, 9, 1, 1], [7, 9, 1, 1],                 // creases: three folded fingers
+    [8, 4, 9, 1], [18, 7, 1, 3], [20, 10, 1, 5],
+    [4, 8, 1, 3], [3, 11, 3, 1], [5, 12, 1, 1], // thumb curled onto palm
+    [10, 11, 1, 6], [14, 11, 1, 6], [18, 11, 1, 5], // folded finger seams
+    [11, 16, 3, 1], [15, 16, 3, 1], [19, 15, 1, 1],
+    [8, 17, 1, 5], // index shadow
   ],
   hi: [
-    [2, 4, 1, 1], [2, 5, 1, 2], [4, 3, 4, 1],
-    [2, 10, 1, 4],                              // the lit left edge of the finger
+    [7, 6, 9, 1], [6, 7, 1, 4], [2, 9, 1, 2],
+    [11, 10, 2, 1], [15, 10, 2, 1], [19, 10, 1, 1],
+    [6, 14, 1, 8],
   ],
 };
 

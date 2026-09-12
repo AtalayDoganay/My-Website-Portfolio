@@ -39,6 +39,18 @@ MEASURE = """
     natural: art ? [art.naturalWidth, art.naturalHeight] : null,
     artBox: [Math.round(a.width), Math.round(a.height)],
     screen: [Math.round(s.width), Math.round(s.height)],
+    button: (() => { const b = document.querySelector('.crt__go');
+      if (!b || b.hidden) return null;
+      const r = b.getBoundingClientRect();
+      return [Math.round(r.width), Math.round(r.height)]; })(),
+    label: (() => { const l = document.querySelector('.crt__go-label');
+      return l ? Math.round(parseFloat(getComputedStyle(l).fontSize) * 10) / 10 : 0; })(),
+    handFits: (() => {
+      const hand = document.querySelector('.invite__hand');
+      const box = hand.getBoundingClientRect();
+      const g = document.querySelector('[data-screen]').getBoundingClientRect();
+      return box.top >= g.top - 0.5 && box.left >= g.left && box.right <= g.right;
+    })(),
     centred: Math.abs((a.left + a.width / 2) - window.innerWidth / 2),
     inside: a.left >= -0.5 && a.right <= window.innerWidth + 0.5
             && a.top >= -0.5 && a.bottom <= window.innerHeight + 0.5,
@@ -117,7 +129,11 @@ def main():
                     "() => document.querySelector('[data-room]').dataset.state === 'room-ready'",
                     timeout=8000)
                 pg.wait_for_timeout(200)
+                pg.evaluate("""() => document.querySelector('.invite__hand').getAnimations()
+                    .forEach(a => { a.pause(); a.currentTime = 200; })""")
                 d = pg.evaluate(MEASURE)
+                rep.note(f"{scheme} {name}: entire raised glove fits the glass",
+                         d["handFits"], ok=d["handFits"])
 
                 integer = abs(d["scale"] - round(d["scale"])) < 1e-6
                 exact = d["natural"] and d["artBox"] == [
@@ -134,10 +150,20 @@ def main():
                     f"overflow {d['overflow']} inside {d['inside']}",
                     ok=d["shownCount"] == 1 and d["centred"] < 2 and d["overflow"] <= 0 and d["inside"],
                 )
+                # What matters is that what is ON the glass can be used, not
+                # that the glass hits some pixel width. A short landscape phone
+                # is the one framing that cannot reach scale 2 - the wide grid
+                # is 330 rows tall and two of those do not fit in 390 - so it
+                # shows at scale 1 and the glass is about 108px. That is fine
+                # for the artwork; what would NOT be fine is the key shrinking
+                # with it, so the key and its label are what get asserted.
+                btn = d["button"] or [0, 0]
                 rep.note(
-                    f"{scheme} {name}: screen readable",
-                    f"{d['screen'][0]}x{d['screen'][1]}",
-                    ok=d["screen"][0] >= 140,
+                    f"{scheme} {name}: screen readable, key usable",
+                    f"glass {d['screen'][0]}x{d['screen'][1]} "
+                    f"key {btn[0]}x{btn[1]} label {d['label']}px",
+                    ok=d["screen"][0] >= 100 and btn[0] >= 60 and btn[1] >= 40
+                       and d["label"] >= 11,
                 )
                 if name in ("390", "1440", "1920"):
                     pg.screenshot(path=str(out / f"open-{scheme}-{name}.png"))

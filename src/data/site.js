@@ -54,14 +54,16 @@ export const opening = {
 
   // What the opening prints. The timing lives in src/scripts/room.js; the words
   // live here, because they are content.
-  bootWord: 'Wait',
   lineOne: 'Welcome to my website...',
   lineTwo: 'Hi, my name is Atalay Doganay...',
   // Announced once, when the introduction is complete - not character by
   // character, and never for the decorative burst.
   introSpoken: 'Welcome to my website. Hi, my name is Atalay Doganay.',
   skipLabel: 'Skip intro',
-  soundLabel: 'Intro sound',
+  // The sound control says what pressing it will do. The opening always plays
+  // silently, because a browser will not let a page make a noise before it has
+  // been interacted with; this is the explicit way to hear it.
+  soundLabel: 'Play intro with sound',
   invitePointer: 'CLICK!',
   inviteTouch: 'TAP!',
 

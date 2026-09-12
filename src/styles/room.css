@@ -1,7 +1,7 @@
 /* ===========================================================================
    The opening scene.
 
-   The desk is pixel art drawn at 340x180 and scaled by a WHOLE NUMBER at rest,
+   The desk is pixel art drawn at 576x330 and scaled by a WHOLE NUMBER at rest,
    so every source pixel lands on an exact block of device pixels and nothing
    shimmers when the composition resizes. The scale is chosen by the page
    script; the value in tokens.css is the fallback before it runs.
@@ -15,9 +15,8 @@
    arrive as the camera retreats. The camera is fractional while it moves and
    lands on exactly scale 1, which is where the integer pixel grid matters.
 
-   The introduction, the button, the hand and the burst all live inside
-   `.crt__glass`, which clips them. They are part of the physical screen, not
-   decoration floating over the machine.
+   Text, button and hand live inside the clipped glass. The external .crt__fx
+   layer carries particles across the bezel and out into the room.
 
    Skip, sound and the theme switch are siblings of the world, never children,
    so the camera does not carry them.
@@ -58,12 +57,17 @@
   opacity: 0.7;
 }
 
-/* The tabletop, continued out to both window edges. The artwork is centred and
-   narrower than the window, so without this the desk would stop short of the
-   sides with wall showing past its ends. Every number comes from the generated
-   block at the end of this file, which reads them off the asset - so the rows
-   here are the same rows the artwork draws, at the same scale, and the two meet
-   with no seam. It is inside the world, so the camera carries it too.
+/* The narrow framing's tabletop, continued out to both window edges. That
+   artwork is centred and narrower than the window, so without this its desk
+   would stop short of the sides with wall showing past its ends. Every number
+   comes from the generated block at the end of this file, which reads them off
+   the asset - so the rows here are the same rows the artwork draws, at the
+   same scale, and the two meet with no seam. It is inside the world, so the
+   camera carries it too.
+
+   The wide framing draws a finite, freestanding desk inside its own canvas,
+   with both ends and its legs in the picture, so its generated band is empty
+   and this element paints nothing there.
 
    It sits above the glow so the tube lights the wall and not the desk: a tinted
    band beside an untinted artwork would show the join. */
@@ -79,7 +83,7 @@
 .room__glow {
   inset: 0;
   background: radial-gradient(
-    42% 38% at 30% 62%,
+    42% 38% at 38% 62%,
     color-mix(in srgb, var(--cyan) 18%, transparent) 0%,
     transparent 70%
   );
@@ -136,9 +140,23 @@
   container-type: inline-size;
 }
 
-/* overflow: hidden is what keeps the introduction, the button, the hand and the
-   burst INSIDE the glass, at every frame of the camera move as well as at rest. */
+/* The glass clips the introduction, button and glove; .crt__fx is its sibling. */
+/* The button's geometry is declared HERE, on the glass, rather than on the
+   button - because the hand is positioned from it too, and the hand is the
+   button's sibling, not its child. A custom property only reaches descendants,
+   so a --btn-h living on .crt__go is simply undefined by the time .invite__hand
+   asks for it, which invalidates the whole declaration that used it. Declaring
+   it on their common ancestor is what lets the press be derived from the key's
+   real size instead of re-guessed alongside it.
+
+   The container for cqi is .crt__screen either way, so the units mean the same
+   thing in both places. */
 .crt__glass {
+  --u: 1cqi;
+  --btn-w: 46cqi;
+  --btn-h: 20cqi;
+  --drop: calc(var(--u) * 3);
+
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -192,7 +210,14 @@
 }
 
 /* Subtle screen texture: scanlines on the artwork's own grid, and a faint
-   phosphor bloom toward the centre. */
+   phosphor bloom toward the centre.
+
+   These sit BELOW the hand and the button rather than over them. A scanline is
+   a dark stripe every other row, and at this scale that is wide enough to cut a
+   small sprite and an eight-pixel label into unreadable bands - which is what
+   it was doing. The wallpaper and the printed introduction still take them,
+   because those are things the tube is displaying; the glove and the key are
+   read as objects, and objects do not get striped. */
 .crt__scan {
   position: absolute;
   inset: 0;
@@ -203,7 +228,7 @@
   );
   background-size: auto calc(var(--px-scale) * 1.5px);
   pointer-events: none;
-  z-index: 4;
+  z-index: 2;
 }
 .crt__bloom {
   position: absolute;
@@ -214,7 +239,7 @@
     transparent 76%
   );
   pointer-events: none;
-  z-index: 4;
+  z-index: 2;
 }
 :root[data-theme='light'] .crt__bloom { opacity: 0.5; }
 
@@ -233,22 +258,21 @@
 .room[data-hot='on'] .crt__glass { background: var(--glass-lit); }
 
 /* ======================================================== the invitation
-   A raised button, a gloved hand demonstrating it, and a burst that launches
-   from the button's own top edge. Everything is sized in container units of the
-   glass, so it keeps its proportions and its travel stays on screen at every
-   framing.
+   A raised button, a gloved hand demonstrating it, and a burst that escapes the
+   screen entirely. The hand and the button are sized in container units of the
+   glass, so they keep their proportions at every framing; the burst is sized
+   against the ARTWORK, because it travels out across the machine.
 
    One 2000ms cycle with named phases, in order:
 
-     0-14%   anticipation - the hand lifts
-     14-32%  the dip toward the button
-     32-36%  contact - the button goes down, the burst launches
-     36-68%  the burst arcs outward and fades, then nothing
-     50-68%  the button releases and the hand lifts away
+     0-10%   anticipation - the hand lifts a little further, straight up
+     10-31%  the descent
+     31-50%  contact - the button is down, the burst launches
+     50-68%  the button releases and the hand rises, straight up
      68-100% rest, the quiet pause before it repeats
 
    Nothing here costs a timer and nothing accumulates. None of it takes input:
-   the layer is inert and only the button is interactive. */
+   both layers are inert and only the button is interactive. */
 
 .invite {
   position: absolute;
@@ -256,9 +280,11 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity 240ms var(--ease-smooth);
-  z-index: 2;
+  /* Above the scanlines (see .crt__scan) AND above the button, so the finger
+     passes in front of the key it is pressing rather than behind it. */
+  z-index: 6;
 }
-.room:is([data-invite='on'], [data-invite='fire']) .invite { opacity: 1; }
+.room:is([data-invite='on'], [data-invite='fire'], [data-invite='finish'], [data-invite='still']) .invite { opacity: 1; }
 
 .px-sprite { display: block; width: 100%; height: auto; }
 .px-sprite__ink { fill: var(--outline); }
@@ -272,16 +298,11 @@
    lower edge, so pressing it visibly travels down onto its own base. */
 
 .crt__go {
-  --u: 1cqi;
-  --btn-w: 46cqi;
-  --btn-h: 20cqi;
-  --drop: calc(var(--u) * 3);
-
   position: absolute;
   left: 50%;
   top: 65%;
   translate: -50% -50%;
-  z-index: 3;
+  z-index: 5; /* above the scanlines, and above the hand's cuff */
   width: var(--btn-w);
   height: var(--btn-h);
   padding: 0;
@@ -324,8 +345,8 @@
   outline-offset: var(--u);
 }
 
-.room[data-invite='on'] .crt__go-face {
-  animation: btn-press 2000ms linear infinite;
+.room:is([data-invite='on'], [data-invite='finish']) .crt__go-face {
+  animation: btn-press var(--invite-cycle, 2000ms) linear infinite;
 }
 .room[data-invite='fire'] .crt__go-face {
   animation: btn-fire 520ms steps(2, end) 1 both;
@@ -356,50 +377,104 @@
 }
 
 /* ---- the hand ---------------------------------------------------------- */
-/* Above and slightly right of the button, index finger pointing down-left. The
-   dip is tuned so the fingertip - about 21% across and 97% down the sprite -
-   lands ON the button's top face; tools/check_room.py measures that contact
-   from the two live rects rather than trusting these numbers. */
+/* The explicit fingertip anchor fixes the press point while the palm sits to
+   its right. Its y coordinate meets the button face. Only translateY animates;
+   no horizontal or rotational component can drift during the cycle. */
 
 .invite__hand {
+  --hand-w: 22cqi;
+  --hand-h: calc(var(--hand-w) * 24 / 22);
+  --tip-x: 0.3409090909; /* 7.5 / 22; checked against HAND_ANCHOR in the DOM */
+  --tip-y: 1;
+  /* At maximum anticipation the entire cuff remains within the glass. */
+  --lift: 10cqi;
+
   position: absolute;
-  left: calc(50% + 10cqi);
-  top: calc(65% - 40cqi);
-  width: 17cqi;
+  left: calc(50% - var(--hand-w) * var(--tip-x));
+  top: calc(65% - (var(--btn-h) / 2) - var(--hand-h) * var(--tip-y));
+  width: var(--hand-w);
 }
-.room[data-invite='on'] .invite__hand {
-  animation: invite-hand 2000ms linear infinite;
+.room:is([data-invite='on'], [data-invite='finish']) .invite__hand {
+  animation: invite-hand var(--invite-cycle, 2000ms) linear infinite;
 }
 .room[data-invite='fire'] .invite__hand {
   animation: hand-fire 520ms linear 1 both;
 }
+
+/* translateY only. No X term, no rotation - a press is one axis. */
 @keyframes invite-hand {
-  0%   { transform: translate(0, 0); animation-timing-function: cubic-bezier(0.3, 0, 0.6, 1); }
-  14%  { transform: translate(6%, -22%); animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.55); }
-  32%  { transform: translate(-24%, 46%); animation-timing-function: cubic-bezier(0.2, 1.2, 0.4, 1); }
-  36%  { transform: translate(-22%, 42%); }
-  50%  { transform: translate(-22%, 42%); animation-timing-function: cubic-bezier(0.35, 0, 0.3, 1); }
-  68%  { transform: translate(0, 0); }
-  100% { transform: translate(0, 0); }
+  0% {
+    transform: translateY(calc(var(--lift) * -1));
+    animation-timing-function: cubic-bezier(0.35, 0, 0.65, 1);
+  }
+  10% {
+    transform: translateY(calc(var(--lift) * -1.22)); /* anticipation, still vertical */
+    animation-timing-function: cubic-bezier(0.5, 0, 0.85, 0.6);
+  }
+  31% {
+    transform: translateY(0); /* contact, on the key's raised top face */
+    animation-timing-function: linear; /* follows the face through depression */
+  }
+  /* The key travels down two units under the finger (see btn-press). The finger
+     goes with it - it is the thing pushing it - so the two stay in contact
+     through the press instead of separating by the depth of the key. */
+  33%, 50% {
+    transform: translateY(calc(var(--u) * 2));
+    animation-timing-function: cubic-bezier(0.3, 0, 0.35, 1);
+  }
+  68%, 100% { transform: translateY(calc(var(--lift) * -1)); }
 }
 @keyframes hand-fire {
-  0%, 60% { transform: translate(-22%, 42%); }
-  100%    { transform: translate(0, 0); }
+  0%, 60% { transform: translateY(calc(var(--u) * 2)); }
+  100%    { transform: translateY(calc(var(--lift) * -1)); }
 }
 
 /* ---- the burst --------------------------------------------------------- */
-/* Launched from the button's top edge, arcing outward and up. Travel is in
-   container units of the glass, so it scales with the screen instead of being
-   clipped the moment it leaves. Nine pieces, fixed: three exclamation marks,
-   two question marks, four stars. */
+/* OUTSIDE the glass, on purpose.
+
+   `.crt__glass` sets overflow: hidden, so anything launched from inside it can
+   only ever pile up against the bezel - which is what used to happen, and why
+   the marks read as a tangle over the button. This layer is a sibling of the
+   screen instead of a child of it, so nothing clips it: the marks cross the
+   glass boundary, pass in front of the moulding and travel out into the room.
+
+   It is still inside `.room__world`, so the camera carries it like every other
+   physical thing, and its ORIGIN is written from the same generated variables
+   that place the screen and the button:
+
+       x = screen's left edge + half the screen's width      (the button is centred)
+       y = screen's top edge  + 65% of the screen's height    (the button's centre line)
+
+   so it emits from where the button actually is at any framing, rather than
+   from a second, hand-copied guess at the same point.
+
+   Travel is measured in --fx: ONE PERCENT OF THE ARTWORK'S WIDTH. Container
+   units of the glass would have been wrong here - the point is to leave the
+   glass, so the distances have to be relative to the machine, not the screen. */
+
+.crt__fx {
+  --fx: calc(var(--art-width) * var(--px-scale) * 0.01px);
+  --reach: 1;
+  --edge-fx: calc(var(--fx) * 0.32); /* the outline weight on every mark */
+
+  position: absolute;
+  left: calc(var(--screen-left) + var(--screen-width) * 0.5);
+  top: calc(var(--screen-top) + var(--screen-height) * 0.65);
+  width: 0;
+  height: 0;
+  z-index: 7; /* in front of the bezel, the casing and the desk */
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 240ms var(--ease-smooth);
+}
+.room:is([data-invite='on'], [data-invite='fire'], [data-invite='finish']) .crt__fx { opacity: 1; }
 
 .burst {
   position: absolute;
-  left: 50%;
-  top: calc(65% - 10cqi);
+  left: 0;
+  top: 0;
   width: 0;
   height: 0;
-  z-index: 3;
 }
 .burst__bit {
   position: absolute;
@@ -408,88 +483,165 @@
   opacity: 0;
   font-style: normal;
 }
+/* A five-pixel plus: one block and four shadows.
+ *
+ * The outline is four chained drop-shadows rather than more box-shadows,
+ * because a filter applies to the element's RENDERED result - the arms
+ * included - so it wraps the finished star instead of just the centre block.
+ * Doing it with box-shadow would take a twelve-shadow ring. */
 .burst__star {
-  width: 2.2cqi;
-  height: 2.2cqi;
+  --arm: calc(var(--fx) * 1.15);
+  width: var(--arm);
+  height: var(--arm);
   background: currentColor;
   box-shadow:
-    2.2cqi 0 0 currentColor, -2.2cqi 0 0 currentColor,
-    0 2.2cqi 0 currentColor, 0 -2.2cqi 0 currentColor;
+    var(--arm) 0 0 currentColor, calc(var(--arm) * -1) 0 0 currentColor,
+    0 var(--arm) 0 currentColor, 0 calc(var(--arm) * -1) 0 currentColor;
+  filter:
+    drop-shadow(var(--edge-fx) 0 0 var(--outline))
+    drop-shadow(calc(var(--edge-fx) * -1) 0 0 var(--outline))
+    drop-shadow(0 var(--edge-fx) 0 var(--outline))
+    drop-shadow(0 calc(var(--edge-fx) * -1) 0 var(--outline));
 }
 .burst__mark {
   font-family: var(--face-ui);
-  font-size: 11cqi;
+  font-size: calc(var(--fx) * 7);
   line-height: 1;
   translate: -50% -50%;
+  /* An outline on all eight sides, so a coloured glyph stays legible against
+     the wall, the casing and the desk alike as it crosses them.
+     It has to stay THIN: the face is a pixel font whose strokes are only a few
+     units wide, and an outline much heavier than this closes up the counter of
+     a "?" and turns the glyph into a solid block. */
   text-shadow:
-    0.9cqi 0 0 var(--outline), -0.9cqi 0 0 var(--outline),
-    0 0.9cqi 0 var(--outline), 0 -0.9cqi 0 var(--outline),
-    0.9cqi 0.9cqi 0 var(--outline), -0.9cqi 0.9cqi 0 var(--outline),
-    0.9cqi -0.9cqi 0 var(--outline), -0.9cqi -0.9cqi 0 var(--outline);
+    var(--edge-fx) 0 0 var(--outline), calc(var(--edge-fx) * -1) 0 0 var(--outline),
+    0 var(--edge-fx) 0 var(--outline), 0 calc(var(--edge-fx) * -1) 0 var(--outline),
+    var(--edge-fx) var(--edge-fx) 0 var(--outline),
+    calc(var(--edge-fx) * -1) var(--edge-fx) 0 var(--outline),
+    var(--edge-fx) calc(var(--edge-fx) * -1) 0 var(--outline),
+    calc(var(--edge-fx) * -1) calc(var(--edge-fx) * -1) 0 var(--outline);
 }
 
-.burst__bit--1 { --dx: -20; --dy: -24; --spin: -18deg; color: var(--coral); }
-.burst__bit--2 { --dx: 15;  --dy: -25; --spin: 16deg;  color: var(--coral); }
-.burst__bit--3 { --dx: 2;   --dy: -29; --spin: -8deg;  color: var(--coral); }
-.burst__bit--4 { --dx: -29; --dy: -12; --spin: -22deg; color: var(--pink); }
-.burst__bit--5 { --dx: 26;  --dy: -14; --spin: 20deg;  color: var(--gold); }
-.burst__bit--6 { --dx: -12; --dy: -28; --spin: 0deg;   color: var(--cyan); }
-.burst__bit--7 { --dx: 8;   --dy: -29; --spin: 0deg;   color: var(--mint); }
-.burst__bit--8 { --dx: 33;  --dy: -3;  --spin: 0deg;   color: var(--cyan); }
-.burst__bit--9 { --dx: -34; --dy: -1;  --spin: 0deg;   color: var(--mint); }
+/* Ten trajectories, each its own direction and distance.
+ *
+ * Two rules govern these numbers. Every |--dx| is at least 12, and the glove is
+ * about two --fx wide either side of the centre line, so NOTHING launches up
+ * through the hand. And no two pieces share a heading, so they fan out instead
+ * of travelling as one clump - which, with the old values clustered around
+ * straight up, is exactly what they did.
+ *
+ * For scale: the screen is about 21 --fx wide and the casing about 32, so a
+ * piece at |--dx| 20 or more is clear of the machine entirely. */
+.burst__bit--1  { --dx: -22; --dy: -14; --spin: -18deg; color: var(--coral); }
+.burst__bit--2  { --dx:  20; --dy: -17; --spin:  16deg; color: var(--coral); }
+.burst__bit--3  { --dx: -30; --dy:  -3; --spin:  -9deg; color: var(--coral); }
+.burst__bit--4  { --dx:  29; --dy:  -6; --spin:  22deg; color: var(--pink); }
+.burst__bit--5  { --dx: -13; --dy: -21; --spin: -14deg; color: var(--gold); }
+.burst__bit--6  { --dx:  12; --dy: -23; --spin:  12deg; color: var(--cyan); }
+.burst__bit--7  { --dx: -36; --dy: -10; --spin:   0deg; color: var(--cyan); }
+.burst__bit--8  { --dx:  34; --dy: -13; --spin:   0deg; color: var(--mint); }
+.burst__bit--9  { --dx: -26; --dy:   6; --spin:   0deg; color: var(--mint); }
+.burst__bit--10 { --dx:  25; --dy:   8; --spin:   0deg; color: var(--gold); }
 
-.room[data-invite='on'] .burst__bit {
-  animation: burst 2000ms steps(4, end) infinite;
+.room:is([data-invite='on'], [data-invite='finish']) .burst__bit {
+  animation: burst var(--invite-cycle, 2000ms) steps(12, end) infinite;
 }
 .room[data-invite='fire'] .burst__bit {
-  animation: burst-fire 760ms steps(4, end) 1 both;
+  animation: burst-fire 760ms steps(12, end) 1 both;
+}
+.room[data-invite='finish'] :is(.invite__hand, .crt__go-face, .burst__bit) {
+  animation-iteration-count: 1;
 }
 
-/* Out in a small arc - up first, then along - then a visible fade. */
+/* The sequence has to READ, in this order: the button goes down, the burst
+   starts AT the button, the marks cross the bezel, they spread into the room,
+   and they fade out completely. The percentages below are those five beats
+   against the 2000ms cycle, whose contact frame is 31%. */
 @keyframes burst {
-  0%, 31% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
-  36% {
-    opacity: 1;
-    transform: translate(calc(var(--dx) * 0.35cqi), calc(var(--dy) * 0.55cqi))
-               scale(1.1) rotate(calc(var(--spin) * 0.4));
+  /* Invisible until the key is down, and ALREADY SEPARATED by the first frame
+     that can be seen. Fading ten marks up while they all still sit on the
+     button is what produced a tangle over it; by the time any of them has any
+     opacity they are a third of the way out and travelling apart. */
+  0% { opacity: 0; transform: translate(0, 0) scale(0.3) rotate(0deg); }
+  31% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3) rotate(0deg);
+    /* Hold, then JUMP. Interpolating opacity from here to the next keyframe
+       fades ten marks up while they are all still stacked on the button, which
+       is precisely the tangle this is meant to avoid; a single step means the
+       first frame anything is visible is the one where they are already
+       fanned out. */
+    animation-timing-function: steps(1, end);
   }
-  48% {
+  37% {    /* leaving the button, fanned out */
     opacity: 1;
-    transform: translate(calc(var(--dx) * 0.8cqi), calc(var(--dy) * 1cqi))
-               scale(1) rotate(var(--spin));
+    transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.32),
+                         calc(var(--dy) * var(--reach) * var(--fx) * 0.32))
+               scale(1.15) rotate(calc(var(--spin) * 0.3));
   }
-  58% {
+  46% {    /* crossing the glass boundary and the bezel */
     opacity: 1;
-    transform: translate(calc(var(--dx) * 1cqi), calc(var(--dy) * 1.05cqi))
+    transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.5),
+                         calc(var(--dy) * var(--reach) * var(--fx) * 0.52))
+               scale(1) rotate(calc(var(--spin) * 0.7));
+  }
+  62% {    /* out in the room */
+    opacity: 1;
+    transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.82),
+                         calc(var(--dy) * var(--reach) * var(--fx) * 0.86))
                scale(0.95) rotate(var(--spin));
   }
-  68%, 100% {
+  74% {
+    opacity: 0.7;
+    transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.94),
+                         calc(var(--dy) * var(--reach) * var(--fx) * 0.97))
+               scale(0.85) rotate(var(--spin));
+  }
+  86%, 100% {
     opacity: 0;
-    transform: translate(calc(var(--dx) * 1.12cqi), calc(var(--dy) * 0.95cqi))
-               scale(0.6) rotate(var(--spin));
+    transform: translate(calc(var(--dx) * var(--reach) * var(--fx)),
+                         calc(var(--dy) * var(--reach) * var(--fx)))
+               scale(0.65) rotate(var(--spin));
   }
 }
+
+/* The same flight, once, on a real press. It runs long enough that the marks
+   are still crossing the bezel as the camera starts to move. */
 @keyframes burst-fire {
-  0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
-  12% {
-    opacity: 1;
-    transform: translate(calc(var(--dx) * 0.35cqi), calc(var(--dy) * 0.55cqi))
-               scale(1.1) rotate(calc(var(--spin) * 0.4));
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3) rotate(0deg);
+    animation-timing-function: steps(1, end); /* hold, then jump - see @keyframes burst */
   }
-  45% {
+  14% {
     opacity: 1;
-    transform: translate(calc(var(--dx) * 0.8cqi), calc(var(--dy) * 1cqi))
-               scale(1) rotate(var(--spin));
+    transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.32),
+                         calc(var(--dy) * var(--reach) * var(--fx) * 0.32))
+               scale(1.15) rotate(calc(var(--spin) * 0.3));
   }
-  70% {
+  40% {
     opacity: 1;
-    transform: translate(calc(var(--dx) * 1cqi), calc(var(--dy) * 1.05cqi))
+    transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.5),
+                         calc(var(--dy) * var(--reach) * var(--fx) * 0.52))
+               scale(1) rotate(calc(var(--spin) * 0.7));
+  }
+  66% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.82),
+                         calc(var(--dy) * var(--reach) * var(--fx) * 0.86))
                scale(0.95) rotate(var(--spin));
+  }
+  84% {
+    opacity: 0.7;
+    transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.94),
+                         calc(var(--dy) * var(--reach) * var(--fx) * 0.97))
+               scale(0.85) rotate(var(--spin));
   }
   100% {
     opacity: 0;
-    transform: translate(calc(var(--dx) * 1.12cqi), calc(var(--dy) * 0.95cqi))
-               scale(0.6) rotate(var(--spin));
+    transform: translate(calc(var(--dx) * var(--reach) * var(--fx)),
+                         calc(var(--dy) * var(--reach) * var(--fx)))
+               scale(0.65) rotate(var(--spin));
   }
 }
 
@@ -580,17 +732,43 @@
   /* The compact glass is 192px wide, so the button takes a larger share of it:
      the label has to stay readable and the target thumb-sized without shrinking
      the monitor itself. */
-  .crt__go { --btn-w: 58cqi; --btn-h: 26cqi; }
+  .crt__glass { --btn-w: 58cqi; --btn-h: 26cqi; }
   .crt__go-label { font-size: calc(var(--u) * 9); }
-  .invite__hand { width: 22cqi; left: calc(50% + 11cqi); top: calc(65% - 47cqi); }
+  /* 24/22 aspect plus 1.22 × 9cqi lift fits the 35.75cqi above the key.
+     The fingertip anchor is unchanged at every viewport. */
+  .invite__hand { --hand-w: 21cqi; --lift: 9cqi; }
+
+  /* The compact machine fills far more of its own artwork than the wide one
+     does - the screen is over half the width rather than a fifth - so the same
+     --dx would leave the marks still sitting on the bezel. They need to travel
+     further to get out, and the portrait framing leaves plenty of wall above
+     the monitor for them to travel into. */
+  .crt__fx { --reach: 1.9; }
+}
+
+/* A SHORT, WIDE viewport - a phone held sideways - is the one case where the
+   artwork cannot reach scale 2. The wide grid is 330 rows tall, and two of
+   those need 660 device-independent pixels against roughly 367 available, so
+   it is shown at scale 1 and the glass comes out about 108px across.
+   (Reaching scale 2 here would need a canvas no taller than 183 rows, which is
+   the density the keyboard could not be drawn at - see tools/pixel_art_scene.py.)
+
+   The artwork is fine at that size. What is NOT fine is the button scaling down
+   with it: at the default share it lands at 50 x 22px with an 8.6px label,
+   which is under the minimum tap target and barely legible. So the key takes a
+   larger share of this glass, and the hand is sized to what is left above it. */
+@media (max-height: 26rem) and (min-width: 44rem) {
+  .crt__glass { --btn-w: 64cqi; --btn-h: 42cqi; }
+  .crt__go-label { font-size: calc(var(--u) * 12); }
+  .invite__hand { --hand-w: 17cqi; --lift: 7cqi; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .crt__caret { animation: none !important; opacity: 0.9; }
-  /* A stationary hand and a button that still works: no press loop, no burst. */
-  .room:is([data-invite='on'], [data-invite='fire']) .invite__hand,
-  .room:is([data-invite='on'], [data-invite='fire']) .crt__go-face,
-  .room:is([data-invite='on'], [data-invite='fire']) .burst__bit { animation: none; }
-  .invite__hand { transform: translate(-22%, 42%); }
-  .burst { display: none; }
+  /* A stationary hand and a button that still works: no press loop, no burst.
+     With no transform the sprite sits at its contact pose, which is the hand
+     resting on the key - the still frame that says what to do. */
+  .room :is(.invite__hand, .crt__go-face, .burst__bit) { animation: none !important; }
+  .invite__hand { transform: none; }
+  .crt__fx { display: none; }
 }

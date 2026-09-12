@@ -1,0 +1,208 @@
+{
+  "checks": [
+    [
+      true,
+      "automatic intro stays silent without a gesture",
+      0
+    ],
+    [
+      true,
+      "explicit sound replay stays available",
+      "Play intro with sound"
+    ],
+    [
+      true,
+      "sound unlock is asynchronous and replays the empty hold",
+      [
+        "running",
+        "boot"
+      ]
+    ],
+    [
+      true,
+      "three dot beeps reach the master output",
+      [
+        0.0888046994805336,
+        0.08859167993068695,
+        0.0888046994805336
+      ]
+    ],
+    [
+      true,
+      "each individual deletion produces a separate short backspace",
+      [
+        {
+          "text": "..",
+          "at": 1888,
+          "peak": 0.039781954139471054
+        },
+        {
+          "text": ".",
+          "at": 2020,
+          "peak": 0.039781954139471054
+        },
+        {
+          "text": "",
+          "at": 2137,
+          "peak": 0.039781954139471054
+        }
+      ]
+    ],
+    [
+      true,
+      "typing remains audible and quieter than dot beeps",
+      {
+        "typing": 0.043074898421764374,
+        "beep": 0.0888046994805336
+      }
+    ],
+    [
+      true,
+      "two demonstration cycles sound at contact and visible flight",
+      [
+        {
+          "cycle": 1,
+          "contact": 8871,
+          "visible flight": 9004,
+          "contact error px": -0.58258056640625,
+          "click peak": 0.04316968098282814,
+          "flight peak": 0.017250264063477516
+        },
+        {
+          "cycle": 2,
+          "contact": 10869,
+          "visible flight": 11003,
+          "contact error px": -0.598846435546875,
+          "click peak": 0.03868468850851059,
+          "flight peak": 0.01580212265253067
+        }
+      ]
+    ],
+    [
+      true,
+      "invitation effects are quieter than terminal beeps",
+      [
+        {
+          "cycle": 1,
+          "contact": 8871,
+          "visible flight": 9004,
+          "contact error px": -0.58258056640625,
+          "click peak": 0.04316968098282814,
+          "flight peak": 0.017250264063477516
+        },
+        {
+          "cycle": 2,
+          "contact": 10869,
+          "visible flight": 11003,
+          "contact error px": -0.598846435546875,
+          "click peak": 0.03868468850851059,
+          "flight peak": 0.01580212265253067
+        }
+      ]
+    ],
+    [
+      true,
+      "real activation fires a single click and flight",
+      {
+        "click": 0.04697577655315399,
+        "flight": 0.01562562771141529
+      }
+    ],
+    [
+      true,
+      "desktop entry stops all invitation audio",
+      0
+    ],
+    [
+      true,
+      "return restores invitation without replaying intro",
+      ""
+    ],
+    [
+      true,
+      "journey video is muxed to captured output using browser timestamps",
+      {
+        "frames": 611,
+        "audioOffsetSeconds": 0.33323193359375,
+        "firstFrameEpoch": 1789158352179.568
+      }
+    ],
+    [
+      true,
+      "click during demonstrated contact reuses one existing burst",
+      {
+        "invite": "finish",
+        "animations": [
+          "burst"
+        ],
+        "phase": 932.894999998112
+      }
+    ],
+    [
+      true,
+      "mute stops output and repeating animation",
+      {
+        "peak": 0,
+        "moving invitation parts": 0
+      }
+    ],
+    [
+      true,
+      "muted control still permits real entry",
+      true
+    ],
+    [
+      true,
+      "mute cancels typing voices and later scheduled characters",
+      {
+        "peak": 0,
+        "moving invitation parts": 0
+      }
+    ],
+    [
+      true,
+      "hidden-page event stops voices and invitation",
+      {
+        "peak": 0,
+        "moving invitation parts": 0
+      }
+    ],
+    [
+      true,
+      "visibility return resumes invitation without introduction",
+      "on"
+    ],
+    [
+      true,
+      "pagehide teardown stops voices and animation",
+      {
+        "peak": 0,
+        "moving invitation parts": 0
+      }
+    ],
+    [
+      true,
+      "refresh skips intro and starts with sound disabled",
+      [
+        "room-ready",
+        0
+      ]
+    ],
+    [
+      true,
+      "no browser script errors",
+      []
+    ],
+    [
+      true,
+      "reduced motion stays static and makes no demonstration sounds",
+      0
+    ]
+  ],
+  "failures": [],
+  "limits": [
+    "Digital signal before OS output, not a speaker or headphone measurement.",
+    "Visibility lifecycle event is simulated; no physical device was backgrounded.",
+    "30 fps review encoding; cue measurements use original browser-frame timestamps."
+  ]
+}

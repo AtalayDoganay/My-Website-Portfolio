@@ -25,7 +25,7 @@ PHONE = {"width": 390, "height": 844}
 
 SCREEN = "[data-screen]"
 GO = "[data-go]"
-TIP_X, TIP_Y = 2.5 / 12, 15.5 / 16   # the fingertip inside the 12x16 sprite
+# The contact point is exported by the sprite into data-tip-x/y in the markup.
 LINE_ONE = "Welcome to my website..."
 LINE_TWO = "Hi, my name is Atalay Doganay..."
 
@@ -62,10 +62,16 @@ def camera(page):
       const m = new DOMMatrixReadOnly(getComputedStyle(w).transform);
       const r = el => { const b = el.getBoundingClientRect();
         return [Math.round(b.width), Math.round(b.height)]; };
+      // The desk's height. The narrow framing continues its tabletop past the
+      // artwork with a CSS band; the wide framing draws a finite desk INSIDE
+      // the artwork and its band is empty, so the drawn image stands in.
+      const band = r(document.querySelector('.room__desk'))[1];
+      const art = [...document.querySelectorAll('.crt__art')]
+        .find(e => e.getBoundingClientRect().height > 0);
       return {k: Math.round(m.a * 1000) / 1000,
               crt: r(document.querySelector('[data-crt]')),
               glass: r(document.querySelector('[data-screen]')),
-              desk: r(document.querySelector('.room__desk'))[1]};
+              desk: band || (art ? r(art)[1] : 0)};
     }""")
 
 
@@ -150,9 +156,16 @@ document.addEventListener('DOMContentLoaded', () => {
 """
 
 
-PARK = """ms => document.querySelectorAll('.invite, .invite *, .crt__go, .crt__go-face')
+# The burst lives OUTSIDE the glass now, in .crt__fx, so parking the cycle has
+# to reach it there as well as the hand and the button inside.
+PARK = """ms => document.querySelectorAll(
+      '.invite, .invite *, .crt__fx, .crt__fx *, .crt__go, .crt__go-face')
     .forEach(el => el.getAnimations({subtree: true})
     .forEach(a => { a.pause(); a.currentTime = ms; }))"""
+
+RESUME = """() => document.querySelectorAll(
+      '.invite, .invite *, .crt__fx, .crt__fx *, .crt__go, .crt__go-face')
+    .forEach(el => el.getAnimations({subtree: true}).forEach(a => a.play()))"""
 
 
 def median(xs):
@@ -178,6 +191,26 @@ def check_opening(ctx, rep, out):
     # The three dots are only on screen for 400ms each, so they are checked
     # against the recorded frames rather than by polling for a transient state.
     page.screenshot(path=str(out / "02-dots.png"))
+
+    # The tube holds EMPTY first, then the dots arrive evenly. The frames are
+    # recorded by a MutationObserver installed before the script runs, so these
+    # are the moments the glass actually changed, not a poll that might miss one.
+    wait_state(page, "typing")
+    frames = page.evaluate("() => window.__frames || []")
+    t0 = frames[0][0] if frames else 0
+    marks = {}
+    for t, _wait, one, _two in frames:
+        if one in (".", "..", "...") and one not in marks:
+            marks[one] = round(t - t0)
+    cleared = next((round(t - t0) for t, _w, one, _x in frames
+                    if one == "" and "..." in marks and round(t - t0) > marks["..."]), None)
+    want = {".": 650, "..": 1050, "...": 1450}
+    # A chained setTimeout cannot run early, and a busy main thread makes it
+    # late, so the tolerance is one-sided and generous on the late side only.
+    on_time = all(k in marks and -20 <= marks[k] - v <= 260 for k, v in want.items())
+    rep.note("A: the tube holds empty, then three dots at 650 / 1050 / 1450ms",
+             {"observed": marks, "dots cleared at": cleared, "wanted": want},
+             on_time and cleared is not None)
 
     wait_state(page, "typing")
     page.wait_for_function(
@@ -249,9 +282,12 @@ def check_opening(ctx, rep, out):
     page.wait_for_timeout(200)
     page.screenshot(path=str(out / "07-room-ready.png"))
     rep.note("C: it lands and the room is revealed around it",
-             {"state": state(page), "controls hidden": page.eval_on_selector(
-                 "[data-intro-controls]", "el => el.hidden")},
-             state(page) == "room-ready" and page.eval_on_selector("[data-intro-controls]", "el => el.hidden"))
+             {"state": state(page),
+              "skip hidden": page.eval_on_selector("[data-skip]", "el => el.hidden"),
+              "sound offered": page.eval_on_selector("[data-sound]", "el => !el.hidden")},
+             state(page) == "room-ready"
+             and page.eval_on_selector("[data-skip]", "el => el.hidden")
+             and page.eval_on_selector("[data-sound]", "el => !el.hidden"))
     got = page.evaluate("""() => {
       const go = document.querySelector('[data-go]');
       const r = go.getBoundingClientRect();
@@ -270,7 +306,7 @@ def check_opening(ctx, rep, out):
     rep.note("the whole introduction is one run of frames, in order",
              f"{len(frames)} frames recorded", len(frames) > 50)
 
-    # A: a dot straight away, then one more every 400ms, then a 400ms hold.
+    # A: three dots, the existing hold, then individual 120ms backspaces.
     dots = [(t, a) for t, w, a, b in frames if a in ('.', '..', '...')]
     seen = []
     for t, a in dots:
@@ -280,10 +316,15 @@ def check_opening(ctx, rep, out):
     cleared = next((t for t, w, a, b in frames if a == '' and t > seen[-1][0]), None)
     if cleared:
         gaps.append(round(cleared - seen[-1][0]))
-    rep.note("A: one dot, then one more every 400ms, then a 400ms hold",
+    rep.note("A: three dots, a 400ms hold, then three individual backspaces",
              {"sequence": [a for _, a in seen], "gaps": gaps},
-             [a for _, a in seen] == ['.', '..', '...']
-             and len(gaps) == 3 and all(330 <= g <= 470 for g in gaps))
+             [a for _, a in seen] == ['.', '..', '...', '..', '.']
+             and len(gaps) == 5 and all(330 <= g <= 480 for g in gaps[:3])
+             and all(105 <= g <= 185 for g in gaps[3:]))
+    wanted_clear = 650 + 2 * 400 + 400 + 2 * 120
+    rep.note("A: deletion extends the intro budget by 240ms",
+             {"expected clear": wanted_clear, "observed clear": round(cleared - t0)},
+             cleared is not None and wanted_clear - 20 <= cleared - t0 <= wanted_clear + 300)
 
     # Per-character cadence of the first line, measured between frames.
     typed = [t for t, w, a, b in frames if a and a != LINE_ONE and len(a) > 1]
@@ -294,9 +335,12 @@ def check_opening(ctx, rep, out):
 
     first = frames[0][0]
     done = next((t for t, w, a, b in frames if b == LINE_TWO), None)
+    printing_budget = (650 + 2 * 400 + 400 + 2 * 120
+                       + (len(LINE_ONE) + len(LINE_TWO)) * 42 + 240 + 290)
     rep.note("the introduction finishes inside its budget",
-             f"{round((done - first) / 1000, 1)}s of printing before the zoom out",
-             done is not None and done - first < 9000)
+             {"printing ms": round(done - first), "nominal printing ms": printing_budget,
+              "nominal full intro ms": printing_budget + 480 + 1500},
+             done is not None and printing_budget - 20 <= done - first <= printing_budget + 1200)
 
     page.close()
 
@@ -347,56 +391,102 @@ def check_invitation(ctx, rep, out):
 
     running = page.evaluate(
         "() => document.querySelector('.invite').getAnimations({subtree: true}).length")
-    rep.note("D: the cycle is CSS, so it costs no timer", f"{running} animations", running > 0)
+    rep.note("D: CSS owns the visual cycle", f"{running} animations", running > 0)
 
     # Park the cycle on its contact beat and measure the fingertip against the
     # button's own rect rather than against an unrelated offset.
     page.evaluate(PARK, 700)
     page.wait_for_timeout(90)
-    touch = page.evaluate("""p => {
-      const h = document.querySelector('.invite__hand').getBoundingClientRect();
+    touch = page.evaluate("""() => {
+      const hand = document.querySelector('.invite__hand');
+      const h = hand.getBoundingClientRect();
       const faceEl = document.querySelector('.crt__go-face');
       const f = faceEl.getBoundingClientRect();
-      const tip = {x: h.left + h.width * p[0], y: h.top + h.height * p[1]};
+      const tip = {x: h.left + h.width * Number(hand.dataset.tipX),
+                   y: h.top + h.height * Number(hand.dataset.tipY)};
       return {tip: [Math.round(tip.x), Math.round(tip.y)],
               face: [Math.round(f.left), Math.round(f.top),
                      Math.round(f.right), Math.round(f.bottom)],
-              onButton: tip.x >= f.left && tip.x <= f.right
-                     && tip.y >= f.top - 2 && tip.y <= f.bottom,
+              onButton: Math.abs(tip.x - (f.left + f.right) / 2) < 0.1
+                     && Math.abs(tip.y - f.top) < 0.1,
               pressed: getComputedStyle(faceEl).translate};
-    }""", [TIP_X, TIP_Y])
+    }""")
     rep.note("D: the fingertip meets the button on the press", touch, touch["onButton"])
     rep.note("D: and the button is down at that moment", touch["pressed"],
              touch["pressed"] not in ("none", "0px"))
-    page.evaluate(PARK, 1000)
+
+    # A press is ONE axis. Sampled right across the cycle rather than at the two
+    # ends, because a sideways drift that returns to centre would pass a
+    # two-point check while still reading as a diagonal swipe on screen.
+    travel = []
+    for ms in range(0, 2001, 100):
+        page.evaluate(PARK, ms)
+        page.wait_for_timeout(16)
+        travel.append(page.evaluate("""() => {
+          const hand = document.querySelector('.invite__hand');
+          const h = hand.getBoundingClientRect();
+          const f = document.querySelector('.crt__go-face').getBoundingClientRect();
+          const s = getComputedStyle(document.querySelector('.invite__hand'));
+          return {dx: h.left + h.width * Number(hand.dataset.tipX) - (f.left + f.right) / 2,
+                  y: h.top, tf: s.transform, rot: s.rotate};
+        }"""))
+    drift = max(t["dx"] for t in travel) - min(t["dx"] for t in travel)
+    rise = max(t["y"] for t in travel) - min(t["y"] for t in travel)
+    skewed = [t["tf"] for t in travel
+              if t["tf"] != "none" and not t["tf"].startswith("matrix(1, 0, 0, 1,")]
+    spun = [t["rot"] for t in travel if t["rot"] not in ("none", "0deg", "")]
+    rep.note("D: the hand travels STRAIGHT DOWN - no sideways drift, no rotation",
+             {"horizontal drift": round(drift, 3), "vertical travel": round(rise, 1),
+              "offset from the button's centre": round(travel[0]["dx"], 3),
+              "skewed frames": len(skewed), "rotated frames": len(spun)},
+             drift < 0.5 and rise > 8 and abs(travel[0]["dx"]) < 0.5
+             and not skewed and not spun)
+    page.evaluate(PARK, 1240)
     page.wait_for_timeout(90)
     page.screenshot(path=str(out / "09-invite-burst.png"))
+    # The marks are meant to LEAVE. Mid-flight most of them should be outside
+    # the glass entirely, and the layer that carries them must not be clipped
+    # by it - which is the whole reason they live outside .crt__glass.
     lit = page.evaluate("""() => {
       const g = document.querySelector('[data-screen]').getBoundingClientRect();
       const vis = [...document.querySelectorAll('.burst__bit')]
         .filter(e => parseFloat(getComputedStyle(e).opacity) > 0.5);
-      const clipped = vis.filter(e => { const r = e.getBoundingClientRect();
+      const outside = vis.filter(e => { const r = e.getBoundingClientRect();
         return r.left < g.left || r.right > g.right
             || r.top < g.top || r.bottom > g.bottom; }).length;
       const colours = [...new Set(vis.map(e => getComputedStyle(e).color))];
+      // Nothing BETWEEN a mark and the room may clip it. The room itself does
+      // clip, to the viewport, and always has - that is not what this is about.
+      let clipper = null;
+      for (let el = document.querySelector('.burst__bit');
+           el && !el.classList.contains('room'); el = el.parentElement) {
+        if (getComputedStyle(el).overflow !== 'visible') {
+          clipper = el.className || el.tagName;
+          break;
+        }
+      }
       return {pieces: vis.length, total: document.querySelectorAll('.burst__bit').length,
-              clipped: clipped, colours: colours.length,
+              outside: outside, colours: colours.length, clipper: clipper,
               marks: vis.filter(e => e.classList.contains('burst__mark')).length,
               stars: vis.filter(e => e.classList.contains('burst__star')).length};
     }""")
-    rep.note("D: the burst is colourful, bounded, and stays inside the glass", lit,
-             lit["pieces"] >= 8 and lit["total"] == 9 and lit["clipped"] == 0
-             and lit["colours"] >= 4 and lit["marks"] >= 4 and lit["stars"] >= 3)
+    rep.note("D: the burst is colourful, bounded, and ESCAPES the glass", lit,
+             lit["pieces"] >= 8 and lit["total"] == 10 and lit["outside"] >= 6
+             and lit["colours"] >= 4 and lit["marks"] >= 4 and lit["stars"] >= 3
+             and lit["clipper"] is None)
 
     # Nothing decorative may be over the glass, and none of it may take a click.
     # The hand and its label belong ON the glass now - anchored just inside its
     # upper-left corner - so what matters is that they clear the printed lines,
     # and that the burst travels OUTSIDE the bezel rather than over the text.
+    page.evaluate(PARK, 700)
+    page.wait_for_timeout(90)
     clear = page.evaluate("""() => {
       const faceEl = document.querySelector('.crt__go-face');
       const f = faceEl.getBoundingClientRect();
       const origin = {x: f.left + f.width / 2, y: f.top};
-      // At launch every piece should still be near the button's press point.
+      // At the launch beat every piece should still be near the press point:
+      // the burst has to START at the button, wherever it ends up.
       const far = [...document.querySelectorAll('.burst__bit')].filter(e => {
         const r = e.getBoundingClientRect();
         return Math.hypot(r.left + r.width / 2 - origin.x,
@@ -415,8 +505,12 @@ def check_invitation(ctx, rep, out):
     rep.note("D: the hand and particles take no pointer events",
              clear["throughHand"], "invite" not in clear["throughHand"]
              and "burst" not in clear["throughHand"])
-    page.evaluate("""() => document.querySelectorAll('.invite, .invite *, .crt__go, .crt__go-face')
-        .forEach(el => el.getAnimations({subtree:true}).forEach(a => a.play()))""")
+    # Resume EVERYTHING that PARK paused, the burst included. Leaving the burst
+    # parked at 700ms - an invisible frame, held by the 31% step until 37% -
+    # made the next check depend on the click landing more than 40ms after
+    # the hand resumed: the page rewinds a held press to its current phase
+    # without unpausing it, so a fast click found no piece showing.
+    page.evaluate(RESUME)
 
     # Entering must stop it, and nothing may be left running.
     before = page.evaluate("() => document.getAnimations().length")
@@ -441,6 +535,51 @@ def check_invitation(ctx, rep, out):
     rep.note("D: entering stops the invitation and leaves nothing running",
              {"before": before, **after},
              after["invite"] == "off" and after["running"] == 0)
+    page.close()
+
+
+def check_sound_offer(ctx, rep, out):
+    """The opening must be silent by default, and say how to hear it.
+
+    Not a test that sound WORKS - that needs the output measured, which
+    tools/check_audio.py does. This is the part that can be settled from the
+    page alone: that nothing tries to make a noise without a gesture, and that
+    the way to ask for one is present and labelled.
+    """
+    page = ctx.new_page()
+    page.add_init_script("""
+      window.__audioContexts = 0;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) {
+        const Wrapped = function (...a) { window.__audioContexts += 1; return new AC(...a); };
+        Wrapped.prototype = AC.prototype;
+        window.AudioContext = Wrapped;
+        window.webkitAudioContext = Wrapped;
+      }
+    """)
+    page.goto(BASE + "/", wait_until="networkidle")
+    page.wait_for_timeout(2600)
+    made = page.evaluate("() => window.__audioContexts")
+    rep.note("the opening plays SILENTLY until asked - no audio context is built",
+             f"{made} contexts created without a gesture", made == 0)
+
+    label = page.eval_on_selector("[data-sound]", "el => el.textContent.trim()")
+    pressed = page.eval_on_selector("[data-sound]", "el => el.getAttribute('aria-pressed')")
+    rep.note("and the control that offers it says what it will do",
+             {"label": label, "aria-pressed": pressed},
+             label == "Play intro with sound" and pressed == "false")
+
+    wait_state(page, "room-ready", timeout=25000)
+    page.click("[data-sound]")
+    page.wait_for_timeout(400)
+    after = page.evaluate("""() => ({
+      contexts: window.__audioContexts,
+      state: document.querySelector('[data-room]').dataset.state,
+      label: document.querySelector('[data-sound]').textContent.trim(),
+    })""")
+    rep.note("a real click unlocks audio and replays the opening from its hold",
+             after, after["contexts"] == 1 and after["state"] in ("boot", "typing")
+             and after["label"] == "Mute")
     page.close()
 
 
@@ -496,10 +635,14 @@ def check_skip(ctx, rep, out):
         page.wait_for_timeout(120)
         got = finished(page)
         got["from"] = was
-        got["controls hidden"] = page.eval_on_selector(
-            "[data-intro-controls]", "el => el.hidden")
+        # Skip has nothing left to skip, so it goes. The sound control stays:
+        # the opening is short, and it is the only way to hear it.
+        got["skip hidden"] = page.eval_on_selector("[data-skip]", "el => el.hidden")
+        got["sound offered"] = page.eval_on_selector(
+            "[data-sound]", "el => !el.hidden && el.textContent.trim()")
         rep.note(f"Skip during {phase} lands on the finished button state", got,
-                 is_finished(got) and got["controls hidden"] and got["invite"] == "on")
+                 is_finished(got) and got["skip hidden"] and got["invite"] == "on"
+                 and got["sound offered"] == "Play intro with sound")
         page.close()
 
     # Escape is the keyboard's Skip, and focus must not be stranded.
@@ -650,7 +793,7 @@ def check_reduced_motion(browser, rep, out):
         .filter(a => a.playState === 'running').length,
       button: !document.querySelector('[data-go]').hidden,
       label: document.querySelector('[data-go-label]').textContent,
-      burst: getComputedStyle(document.querySelector('.burst')).display,
+      burst: getComputedStyle(document.querySelector('.crt__fx')).display,
     })""")
     rep.note("reduced motion: a stationary hand, a usable button, no burst", still,
              still["moving"] == 0 and still["button"] and still["label"] == "CLICK!"
@@ -724,6 +867,7 @@ def main():
             "opening": lambda: check_opening(ctx, rep, out),
             "geometry": lambda: check_reveal_geometry(browser, rep, out),
             "invitation": lambda: check_invitation(ctx, rep, out),
+            "sound": lambda: check_sound_offer(ctx, rep, out),
             "touch": lambda: check_touch(browser, rep, out),
             "skip": lambda: check_skip(ctx, rep, out),
             "second": lambda: check_second_visit(ctx, rep),
