@@ -78,6 +78,11 @@
 
   var world = room.querySelector('[data-world]');
   var screenEl = room.querySelector('[data-screen]');
+  // The portfolio labels are part of the room. While the camera is pushed in,
+  // during the move and on the desktop they are not usable, so they are inert
+  // then: neither focusable nor clickable. setState keeps this in step.
+  var lampsEl = room.querySelector('[data-lamps]');
+  if (lampsEl) lampsEl.inert = true;
   var waitRow = room.querySelector('[data-line="1"]');
   var goBtn = room.querySelector('[data-go]');
   var goLabel = room.querySelector('[data-go-label]');
@@ -564,6 +569,7 @@
   function setState(next) {
     state = next;
     room.dataset.state = next;
+    if (lampsEl) lampsEl.inert = next !== 'room-ready';
   }
 
   function stopTimer() {

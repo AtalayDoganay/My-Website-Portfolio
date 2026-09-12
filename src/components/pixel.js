@@ -138,6 +138,118 @@ export const HAND_PRESS = {
 };
 
 /**
+ * A two-tone sprite from a picture. '#' is outline ink, 'o' the accent fill,
+ * '+' a highlight, '.' nothing; every row is one grid row. Runs of the same
+ * character become one rectangle, so the SVG stays small.
+ */
+export function bitmap(rows) {
+  const w = rows[0].length;
+  const layers = { ink: [], fill: [], hi: [] };
+  const keys = { '#': 'ink', o: 'fill', '+': 'hi' };
+  rows.forEach((row, y) => {
+    if (row.length !== w) throw new Error(`bitmap row ${y} is ${row.length} wide, not ${w}`);
+    let x = 0;
+    while (x < w) {
+      const k = keys[row[x]];
+      if (!k) {
+        x += 1;
+        continue;
+      }
+      let run = 1;
+      while (x + run < w && row[x + run] === row[x]) run += 1;
+      layers[k].push([x, y, run, 1]);
+      x += run;
+    }
+  });
+  return { ...layers, w, h: rows.length };
+}
+
+// The four portfolio lamps: original 16x16 marks with the design's one-unit
+// outline around an accent interior. A repository card with code marks, a
+// bust, a folder, and two message bubbles joined at the corner.
+const LAMP_ICONS = {
+  github: [
+    '................',
+    '..############..',
+    '.#oooooooooooo#.',
+    '.#oooooooooooo#.',
+    '.#ooo#oooo#ooo#.',
+    '.#oo#oooooo#oo#.',
+    '.#o#oooooooo#o#.',
+    '.#oo#oooooo#oo#.',
+    '.#ooo#oooo#ooo#.',
+    '.#oooooooooooo#.',
+    '.#oo++++++oooo#.',
+    '.#oooooooooooo#.',
+    '..############..',
+    '................',
+    '................',
+    '................',
+  ],
+  about: [
+    '................',
+    '......####......',
+    '.....#oooo#.....',
+    '....#oooooo#....',
+    '....#oooooo#....',
+    '....#oooooo#....',
+    '.....#oooo#.....',
+    '......####......',
+    '...###....###...',
+    '..#ooo####ooo#..',
+    '.#ooooooooooo#..',
+    '.#ooooooooooo#..',
+    '#ooooooooooooo#.',
+    '#ooooooooooooo#.',
+    '###############.',
+    '................',
+  ],
+  projects: [
+    '................',
+    '.########.......',
+    '#oooooooo#......',
+    '#oooooooo#######',
+    '#oooooooooooooo#',
+    '#++++++++++++++#',
+    '#oooooooooooooo#',
+    '#oooooooooooooo#',
+    '#oooooooooooooo#',
+    '#oooooooooooooo#',
+    '#oooooooooooooo#',
+    '#oooooooooooooo#',
+    '################',
+    '................',
+    '................',
+    '................',
+  ],
+  social: [
+    '..########......',
+    '.#oooooooo#.....',
+    '#oooooooooo#....',
+    '#oooooooooo#....',
+    '#oooooooooo#....',
+    '#ooooooo######..',
+    '.#ooooo#oooooo#.',
+    '..#oo##oooooooo#',
+    '..#o#.#oooooooo#',
+    '..##..#oooooooo#',
+    '......#oooooooo#',
+    '.......#oooooo#.',
+    '........####oo#.',
+    '............#o#.',
+    '.............##.',
+    '................',
+  ],
+};
+
+export function lampIcon(name) {
+  const rows = LAMP_ICONS[name];
+  if (!rows) throw new Error(`No lamp icon named "${name}"`);
+  const b = bitmap(rows);
+  return pixelSprite(b, { w: b.w, h: b.h, className: 'lamp__sprite' });
+}
+
+/**
  * The theme switch. Both icons are always in the markup; CSS shows whichever the
  * current theme calls for, so switching never waits on JavaScript to redraw.
  */

@@ -264,14 +264,29 @@ def draw_monitor(c, p, m, stand):
     draw_stand(c, p, chin_row=p(x, y, z)[1], **stand)
     x1, y1 = x + w - 1, y + h - 1
 
-    # The tube housing: narrower and lower than the bezel block, deep.
+    # The tube housing: narrower and lower than the bezel block, and it
+    # TAPERS toward the back, as a CRT's does around the tube's neck. Its
+    # front section is inset from the bezel block; its back section is inset
+    # further, so the top and the side are trapezoids rather than a box.
+    o = "outline"
+    tp = r.get("taper", {})
     rx0, rx1 = x + r["inset"], x1 - r["inset"]
     ry0, ry1 = y + r["bottom"], y1 - r["top"]
     rz0, rz1 = z + bd, z + bd + r["d"]
-    draw_box(c, p, rx0, rx1, ry0, ry1, rz0, rz1, front=None, edge=False)
+    bx0, bx1 = rx0 + tp.get("x", 0), rx1 - tp.get("x", 0)
+    by0, by1 = ry0 + tp.get("bottom", 0), ry1 - tp.get("top", 0)
+    side = [p(rx0, ry0, rz0), p(rx0, ry1, rz0), p(bx0, by1, rz1), p(bx0, by0, rz1)]
+    top = [p(rx0, ry1, rz0), p(rx1, ry1, rz0), p(bx1, by1, rz1), p(bx0, by1, rz1)]
+    c.poly(side, "case_side")
+    c.poly(top, "case_top")
+    c.outline_poly(side, o)
+    c.outline_poly(top, o)
     for k in range(4):                       # vents across the housing's top
-        zz = rz1 - 14 - k * 9
-        a, b = p(rx0 + 16, ry1, zz), p(rx1 - 16, ry1, zz)
+        zz = rz1 - 12 - k * 8
+        t = (zz - rz0) / (rz1 - rz0)
+        xa, xb = rx0 + 16 + (bx0 - rx0) * t, rx1 - 16 - (rx1 - bx1) * t
+        yy = ry1 + (by1 - ry1) * t
+        a, b = p(xa, yy, zz), p(xb, yy, zz)
         c.hline(a[0], b[0], a[1], "case_deep")
 
     # The bezel block, whose front face is the true rectangle the glass sits in.
@@ -595,12 +610,15 @@ W, H = 576, 330
 WIDE = dict(
     origin=(48, 292),
     desk=dict(x0=0, x1=521, d=250, t=12, leg=14, inset=12),
+    # The tube housing is 84 deep (it was 108) and tapers 12 a side and 6 on
+    # top toward the back; the tower is 114 deep (it was 138). Both were read
+    # as elongated from this elevation, which shows their tops in full.
     monitor=dict(x=142, w=132, y=28, h=118, z=102, bezel_d=30,
-                 rear=dict(inset=10, top=10, bottom=10, d=108),
+                 rear=dict(inset=10, top=10, bottom=10, d=84, taper=dict(x=12, top=6, bottom=2)),
                  screen=dict(x=12, y=26, w=108, h=81)),
     stand=dict(plate=dict(x=164, w=88, z=108, d=96, h=5, r=10),
                housing=dict(cx=208, cz=132, r0=16, r1=12, y0=5, y1=28)),
-    tower=dict(x=324, w=66, h=140, z=108, d=138),
+    tower=dict(x=324, w=66, h=140, z=108, d=114),
     keyboard=dict(x=194, w=198, z=6, d=64, hf=6, hb=14, ux=8, uz=8, full=True),
     mouse=dict(x=424, w=27, z=14, length=50, hmax=16),
     cables=dict(monitor=[(274, 0, 200), (304, 0, 190), (324, 0, 170)],
@@ -627,11 +645,11 @@ COMPACT = dict(
     origin=(8, 223),
     desk=dict(x0=-60, x1=240, d=176, t=9, leg=12, legs=[(6, 10, False), (148, 10, False)]),
     monitor=dict(x=12, w=120, y=21, h=109, z=84, bezel_d=24,
-                 rear=dict(inset=8, top=8, bottom=8, d=60),
+                 rear=dict(inset=8, top=8, bottom=8, d=48, taper=dict(x=8, top=4, bottom=1)),
                  screen=dict(x=12, y=23, w=96, h=72)),
     stand=dict(plate=dict(x=32, w=80, z=90, d=60, h=4, r=8),
                housing=dict(cx=72, cz=108, r0=13, r1=10, y0=4, y1=21)),
-    tower=dict(x=140, w=34, h=80, z=90, d=84),
+    tower=dict(x=140, w=34, h=80, z=90, d=70),
     keyboard=dict(x=22, w=96, z=6, d=50, hf=5, hb=11, ux=6, uz=8, full=False),
     mouse=dict(x=134, w=18, z=12, length=34, hmax=11),
     cables=dict(monitor=[(124, 0, 140), (137, 0, 130), (142, 0, 120)],

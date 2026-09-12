@@ -115,7 +115,11 @@ async function sceneVariables() {
 
   const wideBand = deskBand(meta.machine.desk, 'wide');
   const compactBand = deskBand(compact.desk, 'narrow');
-  const deskBlock = (desk, band) => `  --desk-band-bottom: ${desk ? desk.fromBottom : 0};
+  // The room also carries the artwork's size: the lamps on the wall are
+  // placed at fractions of the displayed artwork, and they live outside .crt.
+  const deskBlock = (desk, band, c) => `  --art-width: ${c[0]};
+  --art-height: ${c[1]};
+  --desk-band-bottom: ${desk ? desk.fromBottom : 0};
   --desk-band-height: ${band.height};
   --desk-band: ${band.css};`;
 
@@ -128,7 +132,7 @@ ${block(canvas, f)}
 }
 
 .room {
-${deskBlock(meta.machine.desk, wideBand)}
+${deskBlock(meta.machine.desk, wideBand, canvas)}
 }
 
 /* Narrow screens get their own framing, not a shrunken copy of the wide one. */
@@ -138,7 +142,7 @@ ${block(compact.canvas, compact.screenFraction)}
   }
 
   .room {
-${deskBlock(compact.desk, compactBand)}
+${deskBlock(compact.desk, compactBand, compact.canvas)}
   }
 }
 `;

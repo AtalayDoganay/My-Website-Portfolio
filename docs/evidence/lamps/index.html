@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atalay Doganay — lamps and monitor review</title>
+<style>
+  * { box-sizing:border-box }
+  body { margin:32px; background:#10152b; color:#e9edf5; font:16px/1.6 system-ui,sans-serif }
+  h1 { font-size:28px; font-weight:600 } h2 { margin-top:48px; font-size:22px }
+  p { max-width:850px } a { color:#b5def9 } figure { margin:0 }
+  figcaption { padding:12px 0 8px; color:#bac7de }
+  .scroll { overflow:auto; padding-bottom:16px }
+  .comparison { display:grid; grid-template-columns:max-content max-content; gap:24px; width:max-content; padding:16px; background:#10152b }
+  .comparison img, .zoom img { display:block; image-rendering:pixelated }
+  .zoom img { width:calc(var(--w) * 2px) }
+  .row { display:flex; flex-wrap:wrap; gap:24px; align-items:start }
+  .page img { width:680px; max-width:100%; height:auto; display:block }
+  .layouts img { width:390px; max-width:100%; height:auto }
+  .lamps img { height:120px; width:auto; image-rendering:pixelated }
+</style>
+<h1>A shorter monitor, and lamps around the computer</h1>
+<p><a href="REVIEW.md">What changed, what was measured, and the limits</a> ·
+<a href="http://127.0.0.1:4321/">Open local preview</a></p>
+
+<h2>Monitor silhouette and stand connection</h2>
+<p>Same viewport, same 2× scale, same crop rectangles in artwork pixels. Close-ups are
+shown at a further 2× with nearest-neighbour scaling.</p>
+<div class="row zoom" style="--w:840">
+  <figure><figcaption>Before · tube housing 108 deep, a box</figcaption><img src="before/equipment-dark.png" alt="Before: the CRT's rear housing projects far up and back"></figure>
+  <figure><figcaption>After · 84 deep, tapering toward the back; tower 114 deep</figcaption><img src="after/equipment-dark.png" alt="After: a shorter, tapering rear housing and a shorter tower top"></figure>
+</div>
+<div class="row zoom" style="--w:340">
+  <figure><figcaption>Joint before</figcaption><img src="before/support-dark.png" alt="Support and joint before"></figure>
+  <figure><figcaption>Joint after · unchanged, no gap</figcaption><img src="after/support-dark.png" alt="Support and joint after"></figure>
+  <figure><figcaption>Joint after · light</figcaption><img src="after/support-light.png" alt="Support and joint after, light"></figure>
+</div>
+
+<h2>The room at rest, at peak illumination, and after fading</h2>
+<p>Animations parked at 100ms, 700ms and 1200ms of the 2000ms cycle: before the press,
+during the 200ms hold that begins with contact at 620ms, and after the 200ms fade.</p>
+<div class="row page">
+  <figure><figcaption>Dark · rest</figcaption><img src="after/desktop-dark-rest.png" alt="Dark room at rest: subdued labels around the computer"></figure>
+  <figure><figcaption>Dark · peak</figcaption><img src="after/desktop-dark-peak.png" alt="Dark room at peak: the four labels lit with a patch of light each while the key is down"></figure>
+  <figure><figcaption>Dark · faded</figcaption><img src="after/desktop-dark-faded.png" alt="Dark room after the fade: labels subdued again"></figure>
+  <figure><figcaption>Light · rest</figcaption><img src="after/desktop-light-rest.png" alt="Light room at rest"></figure>
+  <figure><figcaption>Light · peak</figcaption><img src="after/desktop-light-peak.png" alt="Light room at peak"></figure>
+  <figure><figcaption>Light · faded</figcaption><img src="after/desktop-light-faded.png" alt="Light room after the fade"></figure>
+</div>
+
+<h2>Three peaks from live cycles</h2>
+<p>Not parked frames: each was taken as soon as a live cycle's lamps crossed 90% lit.
+The key is down and the burst is leaving the glass in every one.</p>
+<div class="row page">
+  <figure><figcaption>Cycle 1</figcaption><img src="after/live-cycle-1.png" alt="Live cycle one at peak"></figure>
+  <figure><figcaption>Cycle 2</figcaption><img src="after/live-cycle-2.png" alt="Live cycle two at peak"></figure>
+  <figure><figcaption>Cycle 3</figcaption><img src="after/live-cycle-3.png" alt="Live cycle three at peak"></figure>
+</div>
+
+<h2>The four lamps · peak, and one at rest</h2>
+<div class="row lamps">
+  <figure><figcaption>GitHub</figcaption><img src="after/lamp-github-peak.png" alt="GitHub lamp lit"></figure>
+  <figure><figcaption>About Me</figcaption><img src="after/lamp-about-peak.png" alt="About Me lamp lit"></figure>
+  <figure><figcaption>Projects</figcaption><img src="after/lamp-projects-peak.png" alt="Projects lamp lit"></figure>
+  <figure><figcaption>Other Social Medias</figcaption><img src="after/lamp-social-peak.png" alt="Other Social Medias lamp lit"></figure>
+  <figure><figcaption>Projects · at rest</figcaption><img src="after/lamp-projects-rest.png" alt="Projects lamp at rest, subdued but readable"></figure>
+</div>
+
+<h2>Phone · 390×844, touch</h2>
+<div class="row layouts">
+  <figure><figcaption>Dark · rest</figcaption><img src="after/phone-dark-rest.png" alt="Phone, dark, at rest"></figure>
+  <figure><figcaption>Dark · peak</figcaption><img src="after/phone-dark-peak.png" alt="Phone, dark, at peak"></figure>
+  <figure><figcaption>Light · peak</figcaption><img src="after/phone-light-peak.png" alt="Phone, light, at peak"></figure>
+  <figure><figcaption>Reduced motion · dark desktop</figcaption><img src="../../../artifacts/lamps/reduced-motion-dark.png" alt="Reduced motion: steady labels, no loop" style="width:680px"></figure>
+</div>
+<p>Local review evidence only. Work is not deployed.</p>
+</html>

@@ -90,6 +90,16 @@ export const opening = {
       { label: 'Contact', href: '/contact/' },
     ],
   },
+  // The four portfolio labels on the wall around the computer. Each press of
+  // the demonstrated key lights them briefly; they are links the whole time.
+  // Destinations are the existing pages and the one confirmed account - the
+  // social item goes to Contact, because no other account is confirmed.
+  lamps: [
+    { id: 'github', label: 'GitHub', href: 'https://github.com/AtalayDoganay' },
+    { id: 'about', label: 'About Me', href: '/about/' },
+    { id: 'projects', label: 'Projects I Have Done So Far', lines: ['Projects I Have', 'Done So Far'], href: '/projects/' },
+    { id: 'social', label: 'Other Social Medias', href: '/contact/' },
+  ],
 };
 
 export const about = {

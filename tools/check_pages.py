@@ -48,11 +48,18 @@ def contrast(fg, bg):
 
 
 def parse_rgb(value):
-    cleaned = value.replace("rgba", "").replace("rgb", "").strip("() ").replace("/", ",")
-    nums = [float(n) for n in cleaned.split(",") if n.strip()]
+    """rgb()/rgba() with 0-255 channels, or the color(srgb r g b) form that
+    Chromium reports for colours produced by color-mix(); those channels are 0-1."""
+    value = value.strip()
+    if value.startswith("color("):
+        body = value[value.index("(") + 1:value.rindex(")")].replace("/", " ").split()
+        nums = [float(n) * 255 for n in body[1:4]]      # body[0] is the colour space
+    else:
+        cleaned = value.replace("rgba", "").replace("rgb", "").strip("() ").replace("/", ",")
+        nums = [float(n) for n in cleaned.replace(" ", ",").split(",") if n.strip()]
     if len(nums) < 3:
         return None
-    return tuple(int(n) for n in nums[:3])
+    return tuple(int(round(n)) for n in nums[:3])
 
 
 CONTRAST_JS = r"""

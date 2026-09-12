@@ -26,8 +26,8 @@
 // Skip, sound and the theme switch sit OUTSIDE the world, so the camera never carries
 // them.
 
-import { esc } from '../lib/html.js';
-import { themeToggle, pixelSprite, HAND_PRESS, HAND_ANCHOR } from './pixel.js';
+import { esc, safeUrl } from '../lib/html.js';
+import { themeToggle, pixelSprite, lampIcon, HAND_PRESS, HAND_ANCHOR } from './pixel.js';
 
 /** Two rows of terminal text with their own carets.
  *
@@ -124,6 +124,30 @@ ${burst()}
 </div>`;
 }
 
+/** The portfolio lamps: four labels on the wall around the computer.
+ *
+ * They are plain links, present and readable the whole time; the press of the
+ * demonstrated key lights them for a moment (see room.css). They live inside
+ * `.room__world`, so the camera carries them like the desk, and after the
+ * stage in the DOM, so the first Tab still reaches the key. The page script
+ * makes them inert whenever the room is not at rest.
+ */
+function lamps(items) {
+  const body = items
+    .map((item) => {
+      const text = (item.lines || [item.label])
+        .map((line) => `<span class="lamp__line">${esc(line)}</span>`)
+        .join('');
+      return `    <a class="lamp lamp--${esc(item.id)}" href="${esc(safeUrl(item.href, `opening.lamps ${item.id}`))}" data-lamp="${esc(item.id)}">
+      <span class="lamp__glow" aria-hidden="true"></span>
+      <span class="lamp__icon" aria-hidden="true">${lampIcon(item.id)}</span>
+      <span class="lamp__text">${text}</span>
+    </a>`;
+    })
+    .join('\n');
+  return `<nav class="room__lamps" data-lamps aria-label="Portfolio">\n${body}\n    </nav>`;
+}
+
 /** The room: the wall, the desk, the controls, and a no-script fallback. */
 export function room({ description, machineAlt, fallback, opening }) {
   return `<div class="room" data-room data-state="boot" data-invite="off">
@@ -137,6 +161,7 @@ export function room({ description, machineAlt, fallback, opening }) {
     <div class="room__stage">
       ${computer({ alt: machineAlt, pointerLabel: opening.invitePointer })}
     </div>
+    ${lamps(opening.lamps || [])}
   </div>
 
   <div class="room__switch">

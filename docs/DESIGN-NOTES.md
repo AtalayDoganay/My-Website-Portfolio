@@ -15,6 +15,20 @@ Its cream fabric, shaded folds and violet cuff distinguish it from bare skin.
 Only vertical translation animates. The whole raised silhouette fits the glass
 in both themes at all seven tested viewport sizes.
 
+**Lamps and a shorter monitor, 2026-09-11 (fourth pass).** The CRT's tube housing is
+84 deep instead of 108 and tapers toward the back; the tower is 114 deep instead of
+138. Four portfolio labels now sit on the wall on a broad arch around the machine -
+GitHub lower left, About Me above it, Projects I Have Done So Far at the top, Other
+Social Medias down the right - each an original 16×16 outlined pixel mark in one of
+the accents with Silkscreen lettering, always present and readable, and lit for a
+moment on every press of the demonstrated key: up in 40ms, held 200ms, back in 200ms,
+a small ellipse of light behind each. They have no timer of their own; their keyframes
+share the invitation's duration and start, so contact is the same frame for the glove,
+the key, the burst and the lamps. Hover or focus keeps one lit; reduced motion shows
+them steady; they are inert whenever the room is not at rest. On phones the arch folds
+into the wall above the machine in the same reading order. See
+`docs/evidence/lamps/REVIEW.md`.
+
 **Viewpoint, revised 2026-09-11 (third pass).** The scene is now laid out in desk
 coordinates and drawn through one projection: the viewer stands in front of the desk
 and slightly above it, depth is foreshortened to half and recedes up the picture,

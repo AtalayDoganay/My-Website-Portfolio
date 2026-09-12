@@ -549,7 +549,7 @@
 .room[data-invite='fire'] .burst__bit {
   animation: burst-fire 760ms steps(12, end) 1 both;
 }
-.room[data-invite='finish'] :is(.invite__hand, .crt__go-face, .burst__bit) {
+.room[data-invite='finish'] :is(.invite__hand, .crt__go-face, .burst__bit, .lamp) {
   animation-iteration-count: 1;
 }
 
@@ -647,6 +647,146 @@
 
 /* Hover and focus strengthen the invitation. They never touch the button. */
 .room[data-hot='on'] .room__glow { opacity: 1.35; }
+
+/* ============================================================= the lamps
+   Four portfolio labels on the wall around the computer, on a broad arch
+   from the left of the desk, over the machine and down the right. They are
+   links, and they are always there - subdued but readable. Each press of the
+   demonstrated key lights them for a moment, a small patch of light around
+   each icon and heading, and they fade back. They never move.
+
+   THE PRESS IS THEIR CLOCK. The lamp keyframes run on the same duration as
+   the hand, the key and the burst, and start on the same style change, so
+   contact at 31% is the same frame for all four effects and there is no
+   timer to drift. A real activation lights them once, from the same press.
+
+   Positions are relative to the artwork's displayed box, not to a viewport:
+   --art-w and --art-h are its size at the current whole-number scale, and
+   the lamps sit at fractions of it around the machine, with a floor so the
+   top of the arch never leaves a short window. */
+
+@property --lit {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+.room__lamps {
+  --art-w: calc(var(--art-width) * var(--px-scale) * 1px);
+  --art-h: calc(var(--art-height) * var(--px-scale) * 1px);
+  --lamp-font: clamp(16px, calc(var(--px-scale) * 8px), 24px); /* Silkscreen is an 8px face */
+  --lamp-icon: clamp(32px, calc(var(--px-scale) * 16px), 48px); /* 16 cells, whole pixels each */
+
+  position: absolute;
+  inset: 0;
+  z-index: 2; /* over the wall and the desk; the burst (7) still passes in front */
+  pointer-events: none;
+}
+
+.lamp {
+  --lit: 0;
+  --lamp-light: var(--lamp-accent);
+  --lamp-glow: 34%;
+
+  position: absolute;
+  translate: -50% -50%;
+  display: grid;
+  justify-items: center;
+  gap: calc(var(--lamp-font) * 0.45);
+  padding: calc(var(--lamp-font) * 0.5) calc(var(--lamp-font) * 0.75);
+  pointer-events: auto;
+  isolation: isolate;
+  font-family: var(--face-ui);
+  font-size: var(--lamp-font);
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--ink) calc(var(--lit) * 100%), var(--ink-dim));
+}
+.lamp:focus-visible {
+  outline: var(--edge) solid var(--cyan);
+  outline-offset: 2px;
+}
+/* Hovering or focusing keeps a lamp lit: an important declaration outranks
+   the running animation, so the cycle cannot dim it under a pointer. */
+.lamp:is(:hover, :focus-visible) { --lit: 1 !important; }
+
+/* The patch of light: an ellipse around the icon and heading, nothing more. */
+.lamp__glow {
+  position: absolute;
+  inset: -45% -30%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side,
+    color-mix(in srgb, var(--lamp-light) var(--lamp-glow), transparent), transparent);
+  opacity: var(--lit);
+  pointer-events: none;
+}
+:root[data-theme='light'] .lamp { --lamp-light: #fffdf5; --lamp-glow: 90%; }
+
+.lamp__icon { width: var(--lamp-icon); height: var(--lamp-icon); }
+.lamp__icon .px-sprite { width: 100%; height: 100%; }
+.lamp__line { display: block; }
+
+/* The icon's interior is the accent, dimmed toward the wall at rest. Its
+   outline is always the design's outline colour. */
+.lamp .px-sprite__fill {
+  fill: color-mix(in srgb, var(--lamp-accent) calc(45% + var(--lit) * 55%), var(--bg-2));
+}
+.lamp .px-sprite__hi {
+  fill: color-mix(in srgb, var(--hand-hi) calc(var(--lit) * 70%), var(--lamp-accent));
+}
+.lamp--github { --lamp-accent: var(--cyan); }
+.lamp--about { --lamp-accent: var(--pink); }
+.lamp--projects { --lamp-accent: var(--gold); }
+.lamp--social { --lamp-accent: var(--mint); }
+
+/* The arch. Fractions of the artwork's displayed box, measured from its
+   centre line and its top; the machine occupies roughly the middle third. */
+.lamp--github { left: calc(50% - var(--art-w) * 0.40); top: calc(100% - var(--art-h) * 0.60); }
+.lamp--about { left: calc(50% - var(--art-w) * 0.33); top: calc(100% - var(--art-h) * 0.88); }
+.lamp--projects {
+  left: 50%;
+  top: max(calc(var(--lamp-font) * 3), calc(100% - var(--art-h) * 1.12 + var(--lamp-font) * 1.5));
+}
+.lamp--social { left: calc(50% + var(--art-w) * 0.37); top: calc(100% - var(--art-h) * 0.72); }
+
+/* Lit from the press: up in 40ms, held 200ms, back over 200ms. */
+.room:is([data-invite='on'], [data-invite='finish']) .lamp {
+  animation: lamp-cycle var(--invite-cycle, 2000ms) linear infinite;
+}
+.room[data-invite='fire'] .lamp {
+  animation: lamp-fire 520ms linear 1 both;
+}
+@keyframes lamp-cycle {
+  0%, 31% { --lit: 0; }
+  33%, 43% { --lit: 1; }
+  53%, 100% { --lit: 0; }
+}
+@keyframes lamp-fire {
+  0% { --lit: 0; }
+  8%, 46% { --lit: 1; }
+  85%, 100% { --lit: 0; }
+}
+
+.room[data-state='entering-desktop'] .lamp { pointer-events: none; }
+
+/* On a phone the machine fills the width, so the arch folds into the wall
+   above it: the top of the arch, then a row either side, then GitHub at the
+   lower left just above the monitor's top - the same order, read the same
+   way round. The floors keep the rows clear of the theme switch and of each
+   other on short screens. */
+@media (max-width: 34rem), (max-height: 26rem) and (max-width: 44rem),
+       (orientation: portrait) and (max-width: 48rem) {
+  .lamp { padding: 0.5rem 0.6rem; }
+  .lamp--projects { left: 50%; top: max(5.5rem, calc(100% - var(--art-h) * 1.42)); }
+  .lamp--about { left: calc(50% - var(--art-w) * 0.27); top: max(10rem, calc(100% - var(--art-h) * 1.2)); }
+  .lamp--social { left: calc(50% + var(--art-w) * 0.26); top: max(10rem, calc(100% - var(--art-h) * 1.2)); }
+  .lamp--github { left: calc(50% - var(--art-w) * 0.32); top: max(14rem, calc(100% - var(--art-h) * 1.01)); }
+  .lamp--social .lamp__text { white-space: normal; max-width: 7em; text-wrap: balance; }
+}
 
 /* ============================================================ the states */
 
@@ -768,7 +908,7 @@
   /* A stationary hand and a button that still works: no press loop, no burst.
      With no transform the sprite sits at its contact pose, which is the hand
      resting on the key - the still frame that says what to do. */
-  .room :is(.invite__hand, .crt__go-face, .burst__bit) { animation: none !important; }
+  .room :is(.invite__hand, .crt__go-face, .burst__bit, .lamp) { animation: none !important; }
   .invite__hand { transform: none; }
   .crt__fx { display: none; }
 }

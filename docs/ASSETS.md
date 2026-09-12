@@ -58,7 +58,10 @@ rectangles; tops are visible parallelograms; left sides are thin slivers.
 
 Construction, in that space. The desk is a 522 × 250 top, 12 thick, with 14-unit
 square legs at its corners. The monitor is a bezel block (132 × 118 × 30) over a
-narrower tube housing (inset 10, 108 deep) with vents on its top; under it, a
+narrower tube housing (inset 10, 84 deep, tapering a further 12 a side and 6 on
+top toward the back - it was a 108-deep box, and read as elongated from this
+elevation) with vents on its top; the tower is 114 deep for the same reason. Under
+the casing, a
 truncated-cone housing (radius 16 to 12, 23 tall) stands in a socket on a rounded
 88 × 96 plate, 5 thick. The housing sits behind the casing's front face, so the chin
 hides its top rows and the joint is the dark band that emerges beneath the bezel;
