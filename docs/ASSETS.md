@@ -160,10 +160,34 @@ grid unit thick, on the machine, the keyboard, the windows, the buttons and the
 taskbar. The CSS palettes in `src/styles/tokens.css` mirror the palettes in the
 generator, so a window border and the monitor's outline are the same value.
 
+## The GitHub mark
+
+The one mark on the site that is not original is the GitHub lamp's icon. It is a
+16×16 pixel treatment of GitHub's **Invertocat**, traced from the official
+`GitHub_Invertocat_Black.png` inside `https://brand.github.com/GitHub_Logos.zip`
+(linked from https://brand.github.com/foundations/logo, fetched 2026-09-11; the zip
+also holds SVG and PDF versions and clear-space variants). The tracing downsampled the
+PNG to a 16-cell grid (`ghmark` study, not committed) and kept the silhouette that
+survives at that size: the ring, the two ear notches, the open face and the tail gap
+at the lower left. It is drawn in ink only, so it renders in the theme's outline colour
+- white on dark, black on light - which are the mark's own two colourways; it is never
+tinted with an accent.
+
+GitHub's guidance, read the same day: permitted uses include using "the Invertocat
+logo as a social button to link to your GitHub profile or project" and linking to
+GitHub; prohibited uses include modifying the logos ("changing the color, dimensions,
+or combining with other words or design elements"), distorting or skewing them, and
+placing them on busy backgrounds. The lamp links to the confirmed GitHub profile, keeps
+the colours, and sits on a plain wall. **A pixel rendering does alter the mark's edges
+at this size**, which is a modification by that guidance's letter; it was made because
+the brief asked for a pixelated treatment that preserves the silhouette, and this note
+records that decision rather than hiding it. Swapping in the official SVG at 32px would
+be the conservative alternative.
+
 ## The opening
 
 ONE SCENE, ONE CAMERA. `.room__world` holds every physical thing - wall, grain, the
-tube's glow, the tabletop band that continues the desk past the artwork, and the monitor,
+tabletop band that continues the desk past the artwork, and the monitor,
 bezel, stand, tower, keyboard, mouse and cables - and a single transform on that element
 is the camera. There are exactly two poses: CLOSE, where the glass covers the viewport,
 and REST, the finished composition at `translate(0,0) scale(1)`. The opening starts at
@@ -261,9 +285,9 @@ it: the finite desk needs no continuation.
 
 So the band is the same rows the artwork draws, at the same scale, and the two meet with
 no seam. Bottom-aligning the scene is what lets those offsets be measured from the
-bottom of the viewport at all. The band sits above the tube's glow in the stacking
-order, so the glow lights the wall and not the desk — a tinted band beside an untinted
-artwork would show the join.
+bottom of the viewport at all. The band and the wall share one plain ground - the halo
+the tube once threw on the wall was removed in the sixth pass (2026-09-12) - because a
+tinted band beside an untinted artwork would show the join.
 
 ## Checks
 

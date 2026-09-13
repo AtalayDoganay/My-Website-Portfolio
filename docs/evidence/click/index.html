@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atalay Doganay — quick click, slow fade review</title>
+<style>
+  * { box-sizing:border-box }
+  body { margin:32px; background:#10152b; color:#e9edf5; font:16px/1.6 system-ui,sans-serif }
+  h1 { font-size:28px; font-weight:600 } h2 { margin-top:48px; font-size:22px }
+  p { max-width:850px } a { color:#b5def9 } figure { margin:0 }
+  figcaption { padding:12px 0 8px; color:#bac7de }
+  .row { display:flex; flex-wrap:wrap; gap:24px; align-items:start }
+  .page img { width:680px; max-width:100%; height:auto; display:block }
+  .wide img { width:720px; max-width:100%; height:auto; display:block }
+  .layouts img { width:390px; max-width:100%; height:auto }
+  .lamps img { height:120px; width:auto; image-rendering:pixelated }
+  .zoom img { width:428px; image-rendering:pixelated }
+</style>
+<h1>A quick click, a slow fade, and a wider arch on a dark wall</h1>
+<p><a href="REVIEW.md">What changed, what was measured, and the limits</a> ·
+<a href="http://127.0.0.1:4321/">Open local preview</a> · <a href="../hold/index.html">Previous pass</a></p>
+<p>Captures from the working site. The cycle is 3600ms: contact at 540ms, the key down
+for 100ms, the finger up by 790ms, the five links fading to nothing over the 1900ms
+after the finger lifts, then about a second of darkness plus the next approach before
+the next click. Frames are parked at the named beats; the three "live" shots were taken
+500ms after full light in three consecutive live cycles.</p>
+
+<h2>Before · the fifth pass, for comparison</h2>
+<div class="row page">
+  <figure><figcaption>Before, dark · the cyan halo on the wall behind the monitor</figcaption><img src="before/desktop-dark.png" alt="The previous state: a broad cyan halo on the wall behind the monitor"></figure>
+  <figure><figcaption>Before, light</figcaption><img src="before/desktop-light.png" alt="The previous state in the light theme"></figure>
+</div>
+
+<h2>The sequence · desktop 1440×900, dark theme</h2>
+<div class="row page">
+  <figure><figcaption>Dark rest · no halo, no trace of the five links</figcaption><img src="after/desktop-dark-dark.png" alt="The room at rest: computer on the desk, a dark wall, nothing else"></figure>
+  <figure><figcaption>Contact + 40ms · the key is down, the links are lighting</figcaption><img src="after/desktop-dark-contact.png" alt="The instant after contact: the key is down and the five links are coming up"></figure>
+  <figure><figcaption>Contact + 400ms · finger lifted, links bright, burst in flight</figcaption><img src="after/desktop-dark-lifted.png" alt="The finger already lifted, the five links still bright, the burst crossing the room"></figure>
+  <figure><figcaption>Contact + 1100ms · mid-fade, half brightness, no longer clickable</figcaption><img src="after/desktop-dark-midfade.png" alt="Halfway through the fade: the links at half brightness, the burst gone"></figure>
+  <figure><figcaption>Hidden + 200ms · gone completely</figcaption><img src="after/desktop-dark-hidden.png" alt="After the fade: the room is dark again with no trace of the links"></figure>
+</div>
+<div class="row zoom">
+  <figure><figcaption>Contact + 60ms · the glove on the depressed key</figcaption><img src="after/glove-on-the-key.png" alt="Close-up: the glove touching the depressed CLICK key"></figure>
+  <figure><figcaption>Contact + 400ms · the glove lifted, the key restored</figcaption><img src="after/glove-lifted.png" alt="Close-up: the glove raised above the restored CLICK key"></figure>
+</div>
+
+<h2>Three consecutive live cycles · 500ms after full light</h2>
+<div class="row page">
+  <figure><figcaption>Cycle 1</figcaption><img src="after/live-click-1.png" alt="Live cycle one, half a second after the click"></figure>
+  <figure><figcaption>Cycle 2</figcaption><img src="after/live-click-2.png" alt="Live cycle two, half a second after the click"></figure>
+  <figure><figcaption>Cycle 3</figcaption><img src="after/live-click-3.png" alt="Live cycle three, half a second after the click"></figure>
+</div>
+
+<h2>The sequence · desktop, light theme</h2>
+<div class="row page">
+  <figure><figcaption>Dark rest</figcaption><img src="after/desktop-light-dark.png" alt="Light theme at rest, nothing on the walls"></figure>
+  <figure><figcaption>Contact + 40ms</figcaption><img src="after/desktop-light-contact.png" alt="Light theme at contact"></figure>
+  <figure><figcaption>Contact + 400ms · lifted</figcaption><img src="after/desktop-light-lifted.png" alt="Light theme with the finger lifted and the links bright"></figure>
+  <figure><figcaption>Contact + 1100ms · mid-fade</figcaption><img src="after/desktop-light-midfade.png" alt="Light theme halfway through the fade"></figure>
+  <figure><figcaption>Hidden</figcaption><img src="after/desktop-light-hidden.png" alt="Light theme with the links hidden again"></figure>
+</div>
+
+<h2>A laptop-shaped window · 1472×695, where the artwork renders at 1x</h2>
+<p>The window from the screenshot that prompted this pass. The arch now spans the
+empty wall instead of ringing the small machine.</p>
+<div class="row wide">
+  <figure><figcaption>Dark · contact + 400ms</figcaption><img src="after/laptop-dark-lifted.png" alt="Laptop window, dark theme: a broad arch of five links across the wall around a small machine"></figure>
+  <figure><figcaption>Dark · mid-fade</figcaption><img src="after/laptop-dark-midfade.png" alt="Laptop window, dark theme, mid-fade"></figure>
+  <figure><figcaption>Dark · hidden</figcaption><img src="after/laptop-dark-hidden.png" alt="Laptop window, dark theme, links hidden"></figure>
+  <figure><figcaption>Light · contact + 400ms</figcaption><img src="after/laptop-light-lifted.png" alt="Laptop window, light theme, links bright"></figure>
+</div>
+
+<h2>The five, at 48px icons and 24px lettering</h2>
+<div class="row lamps">
+  <figure><figcaption>GitHub</figcaption><img src="after/lamp-github.png" alt="GitHub lamp"></figure>
+  <figure><figcaption>About Me</figcaption><img src="after/lamp-about.png" alt="About Me lamp"></figure>
+  <figure><figcaption>Projects</figcaption><img src="after/lamp-projects.png" alt="Projects lamp"></figure>
+  <figure><figcaption>Other Social Medias</figcaption><img src="after/lamp-social.png" alt="Other Social Medias lamp"></figure>
+  <figure><figcaption>Degrees, Certificates &amp; Skills</figcaption><img src="after/lamp-degrees.png" alt="Degrees, Certificates and Skills lamp"></figure>
+</div>
+
+<h2>Phone · 390×844, touch</h2>
+<div class="row layouts">
+  <figure><figcaption>Dark · rest</figcaption><img src="after/phone-dark-dark.png" alt="Phone, dark, at rest"></figure>
+  <figure><figcaption>Dark · lifted</figcaption><img src="after/phone-dark-lifted.png" alt="Phone, dark, finger lifted: five links in three rows above the machine"></figure>
+  <figure><figcaption>Dark · mid-fade</figcaption><img src="after/phone-dark-midfade.png" alt="Phone, dark, mid-fade"></figure>
+  <figure><figcaption>Light · lifted</figcaption><img src="after/phone-light-lifted.png" alt="Phone, light, finger lifted"></figure>
+  <figure><figcaption>Light · hidden</figcaption><img src="after/phone-light-hidden.png" alt="Phone, light, hidden again"></figure>
+</div>
+
+<h2>Reduced motion · the manual control</h2>
+<div class="row page">
+  <figure><figcaption>Menu open · "Hide links"</figcaption><img src="after/reduced-motion-menu-open-dark.png" alt="Reduced motion with the manual menu open: five links steadily lit"></figure>
+  <figure><figcaption>Menu closed</figcaption><img src="after/reduced-motion-menu-closed-dark.png" alt="Reduced motion with the menu closed: nothing on the walls"></figure>
+</div>
+<p>Local review evidence only. Work is not deployed.</p>
+</html>

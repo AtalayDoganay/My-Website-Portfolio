@@ -6,7 +6,7 @@
 // The era is referenced, not copied: no Microsoft logo, no Luna artwork, no
 // borrowed icon set. Every control that looks operable is operable.
 
-import { esc } from '../lib/html.js';
+import { esc, safeUrl } from '../lib/html.js';
 import { pixelIcon, themeToggle, WINDOW_MARK, DOORWAY } from './pixel.js';
 
 const CLOSE = [[3, 3, 2, 2], [5, 5, 2, 2], [7, 7, 2, 2], [9, 9, 2, 2], [11, 11, 2, 2],
@@ -14,7 +14,7 @@ const CLOSE = [[3, 3, 2, 2], [5, 5, 2, 2], [7, 7, 2, 2], [9, 9, 2, 2], [11, 11, 
 const MINIMISE = [[3, 10, 10, 2]];
 const MAXIMISE = [[3, 3, 10, 1], [3, 3, 1, 10], [12, 3, 1, 10], [3, 12, 10, 1], [3, 4, 10, 1]];
 
-export function desktop({ heading, note, items }) {
+export function desktop({ heading, note, items, links = [] }) {
   return `<div class="desktop" data-desktop hidden inert>
   <div class="desktop__wall" aria-hidden="true">
     <img class="desktop__paper desktop__paper--dark" src="/assets/pixel/wallpaper-dark.png"
@@ -47,6 +47,9 @@ export function desktop({ heading, note, items }) {
         <ul class="win__list">
 ${items.map((i) => `          <li><span class="win__bullet" aria-hidden="true"></span>${esc(i)}</li>`).join('\n')}
         </ul>
+        <nav class="win__links" aria-label="Portfolio links">
+${links.map((l) => `          <a class="win__link" href="${esc(safeUrl(l.href, `desktop links ${l.id}`))}">${esc(l.label)}</a>`).join('\n')}
+        </nav>
         <div class="win__field" role="presentation">
           <span class="win__field-label">Status</span>
           <span class="win__field-value">Shell only. Nothing else is wired up yet.</span>

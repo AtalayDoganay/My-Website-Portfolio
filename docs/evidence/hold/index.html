@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atalay Doganay — press-and-hold review</title>
+<style>
+  * { box-sizing:border-box }
+  body { margin:32px; background:#10152b; color:#e9edf5; font:16px/1.6 system-ui,sans-serif }
+  h1 { font-size:28px; font-weight:600 } h2 { margin-top:48px; font-size:22px }
+  p { max-width:850px } a { color:#b5def9 } figure { margin:0 }
+  figcaption { padding:12px 0 8px; color:#bac7de }
+  .row { display:flex; flex-wrap:wrap; gap:24px; align-items:start }
+  .page img { width:680px; max-width:100%; height:auto; display:block }
+  .layouts img { width:390px; max-width:100%; height:auto }
+  .lamps img { height:120px; width:auto; image-rendering:pixelated }
+  .zoom img { width:428px; image-rendering:pixelated }
+</style>
+<h1>A press and hold, and five lamps that are gone in between</h1>
+<p><a href="REVIEW.md">What changed, what was measured, and the limits</a> ·
+<a href="http://127.0.0.1:4321/">Open local preview</a> · <a href="../lamps/index.html">Previous pass</a></p>
+<p>Captures from the working site. The cycle is 4600ms: contact at 460ms, the key held
+down for 2000ms, a 300ms fade as the glove lifts, then dark. Frames are parked at the
+named beats; the three "live hold" shots were taken 700ms into the hold of three
+consecutive live cycles.</p>
+
+<h2>The sequence · desktop, dark theme</h2>
+<div class="row page">
+  <figure><figcaption>Dark rest · no trace of the five items</figcaption><img src="after/desktop-dark-dark.png" alt="The room at rest: computer on the desk, nothing on the walls"></figure>
+  <figure><figcaption>Contact + 40ms · lighting</figcaption><img src="after/desktop-dark-lighting.png" alt="The instant after contact: the key is down and the lamps are coming up"></figure>
+  <figure><figcaption>Hold · glove on the depressed key, all five lit</figcaption><img src="after/desktop-dark-hold.png" alt="One second into the hold: the glove holds the key down and five lamps are lit on the arch"></figure>
+  <figure><figcaption>Release + 150ms · fading</figcaption><img src="after/desktop-dark-fading.png" alt="The glove lifting, the lamps half faded"></figure>
+  <figure><figcaption>Release + 420ms · hidden</figcaption><img src="after/desktop-dark-hidden.png" alt="After the fade: the room is dark again with no trace of the lamps"></figure>
+</div>
+<div class="row zoom">
+  <figure><figcaption>The glove holding the key down during the reveal</figcaption><img src="after/glove-holding-the-key.png" alt="Close-up: the glove touching the depressed CLICK key"></figure>
+</div>
+
+<h2>The sequence · desktop, light theme</h2>
+<div class="row page">
+  <figure><figcaption>Dark rest</figcaption><img src="after/desktop-light-dark.png" alt="Light theme at rest, nothing on the walls"></figure>
+  <figure><figcaption>Hold</figcaption><img src="after/desktop-light-hold.png" alt="Light theme during the hold: five lamps lit with white patches of light"></figure>
+  <figure><figcaption>Fading</figcaption><img src="after/desktop-light-fading.png" alt="Light theme, fading"></figure>
+  <figure><figcaption>Hidden</figcaption><img src="after/desktop-light-hidden.png" alt="Light theme, hidden again"></figure>
+</div>
+
+<h2>Three consecutive live holds</h2>
+<div class="row page">
+  <figure><figcaption>Cycle 1</figcaption><img src="after/live-hold-1.png" alt="Live cycle one, mid-hold"></figure>
+  <figure><figcaption>Cycle 2</figcaption><img src="after/live-hold-2.png" alt="Live cycle two, mid-hold"></figure>
+  <figure><figcaption>Cycle 3</figcaption><img src="after/live-hold-3.png" alt="Live cycle three, mid-hold"></figure>
+</div>
+
+<h2>The five lamps</h2>
+<div class="row lamps">
+  <figure><figcaption>GitHub · the Invertocat</figcaption><img src="after/lamp-github.png" alt="GitHub lamp"></figure>
+  <figure><figcaption>About Me</figcaption><img src="after/lamp-about.png" alt="About Me lamp"></figure>
+  <figure><figcaption>Projects</figcaption><img src="after/lamp-projects.png" alt="Projects lamp"></figure>
+  <figure><figcaption>Other Social Medias</figcaption><img src="after/lamp-social.png" alt="Other Social Medias lamp"></figure>
+  <figure><figcaption>Degrees, Certificates &amp; Skills</figcaption><img src="after/lamp-degrees.png" alt="Degrees, Certificates and Skills lamp"></figure>
+</div>
+
+<h2>Phone · 390×844, touch</h2>
+<div class="row layouts">
+  <figure><figcaption>Dark · rest</figcaption><img src="after/phone-dark-dark.png" alt="Phone, dark, at rest"></figure>
+  <figure><figcaption>Dark · hold</figcaption><img src="after/phone-dark-hold.png" alt="Phone, dark, during the hold: five lamps above the machine"></figure>
+  <figure><figcaption>Light · hold</figcaption><img src="after/phone-light-hold.png" alt="Phone, light, during the hold"></figure>
+  <figure><figcaption>Light · hidden</figcaption><img src="after/phone-light-hidden.png" alt="Phone, light, hidden again"></figure>
+</div>
+
+<h2>Reduced motion · the manual control</h2>
+<div class="row page">
+  <figure><figcaption>Menu open · "Hide links"</figcaption><img src="after/reduced-motion-menu-open-dark.png" alt="Reduced motion with the manual menu open: five lamps steadily lit"></figure>
+  <figure><figcaption>Menu closed</figcaption><img src="after/reduced-motion-menu-closed-dark.png" alt="Reduced motion with the menu closed: nothing on the walls"></figure>
+</div>
+<p>Local review evidence only. Work is not deployed.</p>
+</html>

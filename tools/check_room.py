@@ -75,6 +75,19 @@ def camera(page):
     }""")
 
 
+def cycle_info(page):
+    """The demonstration's clock, read from its own keyframes: the cycle's
+    duration, the contact beat and the release beat, in milliseconds. The
+    parked frames below are taken relative to these, so retiming the CSS
+    retimes the check with it."""
+    return page.evaluate("""() => {
+      const a = document.querySelector('.invite__hand').getAnimations()
+        .find(x => x.animationName === 'invite-hand');
+      const d = a.effect.getTiming().duration, k = a.effect.getKeyframes();
+      return {duration: d, contact: k[2].computedOffset * d, release: k[4].computedOffset * d};
+    }""")
+
+
 def screen_box(page):
     return page.eval_on_selector(
         SCREEN, "el => { const r = el.getBoundingClientRect();"
@@ -393,9 +406,11 @@ def check_invitation(ctx, rep, out):
         "() => document.querySelector('.invite').getAnimations({subtree: true}).length")
     rep.note("D: CSS owns the visual cycle", f"{running} animations", running > 0)
 
-    # Park the cycle on its contact beat and measure the fingertip against the
-    # button's own rect rather than against an unrelated offset.
-    page.evaluate(PARK, 700)
+    # Park the cycle inside the press - 60ms after contact, with the key down -
+    # and measure the fingertip against the button's own rect rather than
+    # against an unrelated offset.
+    beat = cycle_info(page)
+    page.evaluate(PARK, beat["contact"] + 60)
     page.wait_for_timeout(90)
     touch = page.evaluate("""() => {
       const hand = document.querySelector('.invite__hand');
@@ -419,7 +434,7 @@ def check_invitation(ctx, rep, out):
     # ends, because a sideways drift that returns to centre would pass a
     # two-point check while still reading as a diagonal swipe on screen.
     travel = []
-    for ms in range(0, 2001, 100):
+    for ms in range(0, int(beat["duration"]) + 1, 100):
         page.evaluate(PARK, ms)
         page.wait_for_timeout(16)
         travel.append(page.evaluate("""() => {
@@ -441,7 +456,7 @@ def check_invitation(ctx, rep, out):
               "skewed frames": len(skewed), "rotated frames": len(spun)},
              drift < 0.5 and rise > 8 and abs(travel[0]["dx"]) < 0.5
              and not skewed and not spun)
-    page.evaluate(PARK, 1240)
+    page.evaluate(PARK, beat["contact"] + 620)       # mid-flight
     page.wait_for_timeout(90)
     page.screenshot(path=str(out / "09-invite-burst.png"))
     # The marks are meant to LEAVE. Mid-flight most of them should be outside
@@ -479,7 +494,7 @@ def check_invitation(ctx, rep, out):
     # The hand and its label belong ON the glass now - anchored just inside its
     # upper-left corner - so what matters is that they clear the printed lines,
     # and that the burst travels OUTSIDE the bezel rather than over the text.
-    page.evaluate(PARK, 700)
+    page.evaluate(PARK, beat["contact"] + 40)        # the launch beat
     page.wait_for_timeout(90)
     clear = page.evaluate("""() => {
       const faceEl = document.querySelector('.crt__go-face');

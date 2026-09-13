@@ -56,7 +56,7 @@
     enterMs: 1150, //  the camera pushing back in on the glass
     desktopAt: 0.62, //  fraction of enterMs when the real desktop fades in
     fadeMs: 380, //  desktop fade, matches .desktop transition
-    inviteCycleMs: 2000, // CSS uses this same duration; cues read its keyframes
+    inviteCycleMs: 3600, // approach, a 100ms press, a 150ms lift, a 1900ms fade, ~1s dark; CSS uses this same duration and cues read its keyframes
   };
 
   var LINE_ONE = 'Welcome to my website...';
@@ -86,6 +86,7 @@
   var waitRow = room.querySelector('[data-line="1"]');
   var goBtn = room.querySelector('[data-go]');
   var goLabel = room.querySelector('[data-go-label]');
+  var revealBtn = room.querySelector('[data-reveal]');
   var controls = room.querySelector('[data-intro-controls]');
   var skipBtn = room.querySelector('[data-skip]');
   var soundBtn = room.querySelector('[data-sound]');
@@ -570,6 +571,7 @@
     state = next;
     room.dataset.state = next;
     if (lampsEl) lampsEl.inert = next !== 'room-ready';
+    if (next !== 'room-ready' && room.dataset.links === 'open') setLinks(false);
   }
 
   function stopTimer() {
@@ -811,21 +813,26 @@
   function followInvitation(realPress, continuing) {
     if (inviteFrame !== null) cancelAnimationFrame(inviteFrame);
     inviteFrame = null;
-    if (!soundOn || reduceQuery.matches || inviteMuted || pageGone ||
-        document.visibilityState !== 'visible') return;
+    if (reduceQuery.matches || pageGone || document.visibilityState !== 'visible') return;
     var hand = invitationAnimation(handEl, realPress ? 'hand-fire' : 'invite-hand');
     var flight = invitationAnimation(particleEl, realPress ? 'burst-fire' : 'burst');
     if (!hand || !flight) return;
     var duration = flight.effect.getTiming().duration;
-    var contactAt = realPress ? 0 : hand.effect.getKeyframes()[2].computedOffset * duration;
+    var frames = hand.effect.getKeyframes();
+    var contactAt = realPress ? 0 : frames[2].computedOffset * duration;
+    // The lamps stop taking input part-way through their fade, at the lamp
+    // keyframe where pointer-events turns off. A lamp that still has keyboard
+    // focus hands it back on that beat - never on a real press, which is
+    // already on its way into the desktop.
+    var releaseAt = realPress ? Infinity : lampCutoff(duration);
     var visible = flight.effect.getKeyframes().find(function (f) { return Number(f.opacity) > 0; });
     if (!visible) return;
     var flightAt = visible.computedOffset * duration;
-    cueRun = continuing || { cycle: -1, contact: realPress, flight: false };
-    if (realPress) mouseClick();
+    cueRun = continuing || { cycle: -1, contact: realPress, flight: false, release: false };
+    if (realPress && audible()) mouseClick();
     function tick() {
       inviteFrame = null;
-      if (!soundOn || inviteMuted || pageGone || document.visibilityState !== 'visible' ||
+      if (pageGone || document.visibilityState !== 'visible' ||
           !['on', 'fire', 'finish'].includes(room.dataset.invite)) return;
       var elapsed = Number(flight.currentTime || 0);
       var cycle = realPress ? 0 : Math.floor(elapsed / duration);
@@ -834,20 +841,92 @@
         cueRun.cycle = cycle;
         cueRun.contact = realPress;
         cueRun.flight = false;
+        cueRun.release = false;
       }
       if (flight.playState === 'running') {
         if (!cueRun.contact && t >= contactAt) {
           cueRun.contact = true;
-          if (t - contactAt < 80) mouseClick();
+          if (audible() && t - contactAt < 80) mouseClick();
         }
         if (!cueRun.flight && t >= flightAt) {
           cueRun.flight = true;
-          if (t - flightAt < 80) particleFlight();
+          if (audible() && t - flightAt < 80) particleFlight();
+        }
+        if (!cueRun.release && t >= releaseAt) {
+          cueRun.release = true;
+          returnFocusFromLamps();
         }
       }
       if (flight.playState !== 'finished') inviteFrame = requestAnimationFrame(tick);
     }
     inviteFrame = requestAnimationFrame(tick);
+  }
+
+  /** The beat, in ms of the cycle, on which the lamps refuse the pointer: read
+   *  from their own keyframes, so the CSS fade can be retimed freely. */
+  function lampCutoff(duration) {
+    var lamp = lampsEl && lampsEl.querySelector('.lamp');
+    var anim = invitationAnimation(lamp, 'lamp-cycle');
+    if (!anim) return Infinity;
+    var keys = anim.effect.getKeyframes();
+    var live = false;
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i].pointerEvents === 'auto') live = true;
+      else if (live && keys[i].pointerEvents === 'none') return keys[i].computedOffset * duration;
+    }
+    return Infinity;
+  }
+
+  /** The beat, in ms of the cycle, on which the lamps refuse the pointer: read
+   *  from their own keyframes, so the CSS fade can be retimed freely. */
+  function lampCutoff(duration) {
+    var lamp = lampsEl && lampsEl.querySelector('.lamp');
+    var anim = invitationAnimation(lamp, 'lamp-cycle');
+    if (!anim) return Infinity;
+    var keys = anim.effect.getKeyframes();
+    var live = false;
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i].pointerEvents === 'auto') live = true;
+      else if (live && keys[i].pointerEvents === 'none') return keys[i].computedOffset * duration;
+    }
+    return Infinity;
+  }
+
+  /** Sound is offered, never taken: the same observer runs silently until it is. */
+  function audible() {
+    return soundOn && !inviteMuted;
+  }
+
+  /** Focus must never be left on a lamp that is going dark. */
+  function returnFocusFromLamps() {
+    if (!lampsEl || room.dataset.links === 'open') return;
+    var active = document.activeElement;
+    if (!active || !lampsEl.contains(active)) return;
+    var target = revealBtn || goBtn;
+    if (target) target.focus({ preventScroll: true });
+  }
+
+  /** The manual reveal: a steady, fully lit menu until it is closed. While it
+   *  is open the demonstration rests - the stylesheet removes its animations,
+   *  so the glove sits raised and nothing cues - and the observer re-binds to
+   *  the fresh animations when the menu closes. */
+  function setLinks(open) {
+    room.dataset.links = open ? 'open' : 'closed';
+    if (revealBtn) {
+      revealBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      revealBtn.textContent = open ? revealBtn.dataset.hide : revealBtn.dataset.show;
+    }
+    if (open) {
+      if (inviteFrame !== null) cancelAnimationFrame(inviteFrame);
+      inviteFrame = null;
+    } else if (state === 'room-ready' && room.dataset.invite === 'on') {
+      followInvitation(false);
+    }
+  }
+  if (revealBtn) {
+    revealBtn.addEventListener('click', function () {
+      setLinks(room.dataset.links !== 'open');
+    });
   }
 
   function inviteWord() {
@@ -917,10 +996,18 @@
     var demo = invitationAnimation(handEl, 'invite-hand');
     var phase = demo ? Number(demo.currentTime) % TUNING.inviteCycleMs : -1;
     var frames = demo ? demo.effect.getKeyframes() : [];
-    // A click arriving while the glove is already holding the key accepts that
-    // press. Finish its existing flight once; don't launch a second burst/noise.
+    // A click arriving while the demonstrated burst is still in flight accepts
+    // that press. Finish its existing flight once; don't launch a second
+    // burst/noise over it. The window runs from contact to the burst keyframe
+    // where its last piece is gone.
+    var flight = invitationAnimation(particleEl, 'burst');
+    var flightKeys = flight ? flight.effect.getKeyframes() : [];
+    var lastLit = -1;
+    flightKeys.forEach(function (f, i) { if (Number(f.opacity) > 0) lastLit = i; });
+    var flightEnd = lastLit >= 0 && lastLit + 1 < flightKeys.length
+      ? flightKeys[lastLit + 1].computedOffset * TUNING.inviteCycleMs : -1;
     var acceptPress = demo && phase >= frames[2].computedOffset * TUNING.inviteCycleMs &&
-      phase <= frames[4].computedOffset * TUNING.inviteCycleMs;
+      phase <= flightEnd;
     var previousCues = cueRun;
     setState('entering-desktop');
     if (inviteFrame !== null) cancelAnimationFrame(inviteFrame);
@@ -1126,6 +1213,9 @@
     } else if (startMenu && !startMenu.hidden) {
       closeStartMenu();
       startBtn.focus();
+    } else if (state === 'room-ready' && room.dataset.links === 'open') {
+      setLinks(false); // Escape closes the manual menu and returns to its control
+      if (revealBtn) revealBtn.focus();
     } else if (state === 'desktop') {
       leave();
     }

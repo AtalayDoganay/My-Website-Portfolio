@@ -240,7 +240,12 @@ def main():
                  page.evaluate("__tap.ctxState") == "running"
                  and page.locator("[data-line='1']").inner_text() == "")
         wait_room(page)
-        page.wait_for_timeout(4250)
+        # Record until the third demonstration cycle has begun, so cycles one
+        # and two are complete whatever the cycle's length is.
+        page.wait_for_function("""() => {
+            const a = document.querySelector('.invite__hand').getAnimations()[0];
+            return a && a.currentTime >= a.effect.getTiming().duration * 3 + 100; }""",
+            timeout=30000)
         data = snapshot(page)
         samples, visuals = data["samples"], data["visuals"]
         beeps = [max(peaks_in(samples, at - 20, at + 145), default=0) for at in DOTS_AT]
@@ -262,10 +267,17 @@ def main():
         rep.note("typing remains audible and quieter than dot beeps",
                  {"typing": typed, "beep": max(beeps)}, 0.005 < typed < max(beeps))
 
+        # The cycle's length and its contact beat come from the page's own
+        # keyframes, so a retimed demonstration retimes this check with it.
+        timing = page.evaluate("""() => {
+            const a = document.querySelector('.invite__hand').getAnimations()[0];
+            const d = a.effect.getTiming().duration;
+            return {duration: d, contact: a.effect.getKeyframes()[2].computedOffset * d}; }""")
+        cycle_ms, contact_ms = timing["duration"], timing["contact"]
         cues = []
         for cycle in (1, 2):
             frames = [v for v in visuals if v["invite"] == "on" and v["phase"] is not None
-                      and cycle * 2000 <= v["phase"] < (cycle + 1) * 2000]
+                      and cycle * cycle_ms <= v["phase"] < (cycle + 1) * cycle_ms]
             contact = next(v for v in frames if abs(v["gap"]) < 0.7)
             flight = next(v for v in frames if v["bit"] > 0.5)
             click_peak = max(peaks_in(samples, contact["t"] - 16, contact["t"] + 75), default=0)
@@ -279,10 +291,12 @@ def main():
         rep.note("invitation effects are quieter than terminal beeps", cues,
                  all(c["click peak"] < max(beeps) and c["flight peak"] < c["click peak"] for c in cues))
 
-        # Activate outside the hold: one new press and one new flight.
+        # Activate in the dark pause at the end of the cycle:
+        # one new press and one new flight.
         page.wait_for_function("""() => {
             const a = document.querySelector('.invite__hand').getAnimations()[0];
-            const t = a.currentTime % 2000; return t > 1380 && t < 1530; }""")
+            const d = a.effect.getTiming().duration;
+            const t = a.currentTime % d; return t > d - 1000 && t < d - 850; }""")
         page.click("[data-go]")
         activated = time_now(page)
         page.locator("[data-go]").dispatch_event("click")
@@ -301,11 +315,22 @@ def main():
                  output_peak(page, desktop_at) < 0.001)
         page.keyboard.press("Escape")
         wait_room(page)
-        page.wait_for_timeout(2350)
+        returned_at = time_now(page)
+        # The restored demonstration's first click comes at its contact beat,
+        # wherever that beat is in the cycle: wait for it, then look for output
+        # since the return rather than at a fixed offset.
+        page.wait_for_function("""() => {
+            const a = document.querySelector('.invite__hand').getAnimations()[0];
+            if (!a) return false;
+            const d = a.effect.getTiming().duration;
+            return a.currentTime > a.effect.getKeyframes()[2].computedOffset * d + 200; }""",
+            timeout=15000)
+        page.wait_for_timeout(120)
         rep.note("return restores invitation without replaying intro",
-                 page.locator("[data-line='1']").inner_text(),
+                 {"line": page.locator("[data-line='1']").inner_text(),
+                  "peak since return": output_peak(page, returned_at)},
                  page.locator("[data-line='1']").inner_text() == ""
-                 and output_peak(page, desktop_at + 1500) > 0.001)
+                 and output_peak(page, returned_at) > 0.001)
         page.evaluate("__tap.stopRec()")
         page.wait_for_function("__tap.recorded !== null")
         recorded = page.evaluate("__tap.recorded")
@@ -320,7 +345,9 @@ def main():
         # and its playhead must not jump back to the beginning of a second burst.
         page.wait_for_function("""() => {
             const a = document.querySelector('.invite__hand').getAnimations()[0];
-            return a.currentTime % 2000 > 800 && a.currentTime % 2000 < 880; }""")
+            const d = a.effect.getTiming().duration;
+            const c = a.effect.getKeyframes()[2].computedOffset * d;
+            const t = a.currentTime % d; return t > c + 300 && t < c + 380; }""")
         page.click("[data-go]")
         accepted = page.evaluate("""() => ({
             invite:document.querySelector('[data-room]').dataset.invite,
@@ -328,7 +355,7 @@ def main():
             phase:document.querySelector('.burst__bit').getAnimations()[0]?.currentTime ?? -1})""")
         rep.note("click during demonstrated contact reuses one existing burst", accepted,
                  accepted["invite"] == "finish" and accepted["animations"] == ["burst"]
-                 and 780 < accepted["phase"] < 1150)
+                 and contact_ms + 250 < accepted["phase"] < contact_ms + 700)
         wait_room(page, "desktop")
         page.keyboard.press("Escape")
         wait_room(page)

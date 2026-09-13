@@ -137,7 +137,7 @@ function lamps(items) {
     .map((item) => {
       const text = (item.lines || [item.label])
         .map((line) => `<span class="lamp__line">${esc(line)}</span>`)
-        .join('');
+        .join(' ');
       return `    <a class="lamp lamp--${esc(item.id)}" href="${esc(safeUrl(item.href, `opening.lamps ${item.id}`))}" data-lamp="${esc(item.id)}">
       <span class="lamp__glow" aria-hidden="true"></span>
       <span class="lamp__icon" aria-hidden="true">${lampIcon(item.id)}</span>
@@ -145,7 +145,7 @@ function lamps(items) {
     </a>`;
     })
     .join('\n');
-  return `<nav class="room__lamps" data-lamps aria-label="Portfolio">\n${body}\n    </nav>`;
+  return `<nav class="room__lamps" id="room-lamps" data-lamps aria-label="Portfolio">\n${body}\n    </nav>`;
 }
 
 /** The room: the wall, the desk, the controls, and a no-script fallback. */
@@ -155,7 +155,6 @@ export function room({ description, machineAlt, fallback, opening }) {
     <div class="room__env" aria-hidden="true">
       <span class="room__wall"></span>
       <span class="room__grain"></span>
-      <span class="room__glow"></span>
       <span class="room__desk"></span>
     </div>
     <div class="room__stage">
@@ -171,6 +170,8 @@ export function room({ description, machineAlt, fallback, opening }) {
   <div class="room__controls" data-intro-controls>
     <button class="room__btn" type="button" data-skip>${esc(opening.skipLabel)}</button>
     <button class="room__btn" type="button" data-sound aria-pressed="false">${esc(opening.soundLabel)}</button>
+    <button class="room__btn" type="button" data-reveal aria-expanded="false" aria-controls="room-lamps"
+            data-show="${esc(opening.revealLabel)}" data-hide="${esc(opening.concealLabel)}">${esc(opening.revealLabel)}</button>
   </div>
 
   <p id="crt-description" class="visually-hidden">${esc(description)}</p>

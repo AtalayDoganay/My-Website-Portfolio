@@ -164,26 +164,59 @@ export function bitmap(rows) {
   return { ...layers, w, h: rows.length };
 }
 
-// The four portfolio lamps: original 16x16 marks with the design's one-unit
-// outline around an accent interior. A repository card with code marks, a
-// bust, a folder, and two message bubbles joined at the corner.
+// The five portfolio lamps. Four are original 16x16 marks with the design's
+// one-unit outline around an accent interior: a bust, a folder, two message
+// bubbles joined at the corner, and a certificate with its seal.
+//
+// GitHub's is not original and is not recoloured: it is a 16x16 pixel
+// treatment of GitHub's own Invertocat mark, traced from the official
+// GitHub_Invertocat_Black.png in https://brand.github.com/GitHub_Logos.zip
+// (brand.github.com/foundations/logo, fetched 2026-09-11) by downsampling it
+// to a 16-cell grid and keeping the silhouette that survives: the ring, the
+// two ear notches, the open face, the tail gap at the lower left. It is drawn
+// in ink only, so it renders in the outline colour - white on the dark theme,
+// black on the light one - which are the mark's own two colourways. GitHub
+// permits the Invertocat "as a social button to link to your GitHub profile";
+// its guidance also asks that the marks not be modified, and a pixel
+// rendering is a modification of the mark's edges at this size. See
+// docs/ASSETS.md for the record.
 const LAMP_ICONS = {
   github: [
-    '................',
+    '.....######.....',
+    '...##########...',
     '..############..',
-    '.#oooooooooooo#.',
-    '.#oooooooooooo#.',
-    '.#ooo#oooo#ooo#.',
-    '.#oo#oooooo#oo#.',
-    '.#o#oooooooo#o#.',
-    '.#oo#oooooo#oo#.',
-    '.#ooo#oooo#ooo#.',
-    '.#oooooooooooo#.',
-    '.#oo++++++oooo#.',
-    '.#oooooooooooo#.',
-    '..############..',
+    '.###.######.###.',
+    '.###........###.',
+    '####........####',
+    '####........####',
+    '####........####',
+    '####........####',
+    '####........####',
+    '#####......#####',
+    '.#####....#####.',
+    '.##.##....#####.',
+    '..##......#####.',
+    '..####....####..',
+    '....##....##....',
+  ],
+  // A rolled diploma: the scroll's two curled ends, a ribbon around the middle
+  // with its knot and tails below.
+  degrees: [
     '................',
     '................',
+    '................',
+    '................',
+    '.##############.',
+    '#o#oooo++oooo#o#',
+    '#o#oooo++oooo#o#',
+    '#o#oooo++oooo#o#',
+    '#o#oooo++oooo#o#',
+    '#o#oooo++oooo#o#',
+    '.##############.',
+    '......#++#......',
+    '.....#+##+#.....',
+    '.....#+#.#+#....',
+    '.....##...##....',
     '................',
   ],
   about: [

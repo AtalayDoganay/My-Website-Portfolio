@@ -15,6 +15,45 @@ Its cream fabric, shaded folds and violet cuff distinguish it from bare skin.
 Only vertical translation animates. The whole raised silhouette fits the glass
 in both themes at all seven tested viewport sizes.
 
+**A quick click and a slow fade, 2026-09-12 (sixth pass).** The wall halo behind the
+machine (`.room__glow`) is gone: the wall is the navy ground and its grain, and only the
+screen glows. The demonstration is a normal click on a 3600ms cycle: contact at 540ms, the
+key down for 100ms, the finger up over 150ms, the five links lit in 50ms at contact and
+fading to nothing over the 1900ms after the finger lifts, then about a second of darkness
+plus the next approach. Each group fades as a whole (its opacity follows `--lit`), its patch
+of light sits inside its own box, and it refuses the pointer from half brightness - the
+script reads that cutoff from the lamp keyframes to hand focus back. Icons are 48px and the
+lettering 24px on desktop-class windows (three times the 8px face; two and a half would
+blur the pixels), with the padding as the hit area; phones keep the 2x sizes. The arch is
+laid out on the wall: the crown and the two upper links take their height from the free
+wall above the artwork and their spread from the window (17%, 50%, 83% with rem floors),
+GitHub and Degrees sit lower beside the desk, measured from the artwork. A laptop-shaped
+window (1472x695, artwork at 1x) is now a checked viewport. "Show links" rests the
+demonstration while open. See `docs/evidence/click/REVIEW.md`.
+
+**Press and hold, 2026-09-11 (fifth pass).** The demonstration is now a press AND
+HOLD on a 4600ms cycle: the glove comes straight down, the key depresses and the click
+sounds at contact (460ms), the burst and whoosh fire once, five lamps on the wall light
+in 50ms and stay fully lit while the glove keeps the key down for two seconds, then
+fade over 300ms as it lifts, followed by a clearly dark pause. Between presses the
+lamps are gone entirely - `visibility: hidden`, so nothing can hover, click, tap, focus
+or read them, and their positions stay reserved so the reveal moves nothing. Five
+lamps now: GitHub (the Invertocat, see ASSETS.md) at the far lower left, About Me
+upper left, Projects at the crown, Other Social Medias upper right, and Degrees,
+Certificates & Skills lower on the right, linking to a credentials section of the
+About page that lists only the confirmed degrees. A "Show links" control beside the
+sound control shows the lamps steadily until closed (Escape closes it); focus on a lamp
+returns to that control as the fade begins; under reduced motion the control is the
+only reveal. The desktop window lists the same five destinations. See
+`docs/evidence/hold/REVIEW.md`.
+
+**Corrections, 2026-09-12.** The lit hold is exactly 2000ms: lit from 11.1% to 54.6% of
+the 4600ms cycle, faded by 61.1%, the glove up from 61.6%, then a dark pause of about
+2.2s. The Degrees lamp has a violet accent and so a patch of light of its own, and every
+lamp carries a neutral fallback accent so none can lose its patch silently. A heading's
+wrapped lines are joined with a space, which the phone layouts lay inline. The lamp check
+reads both facts and holds the lit span to 2000ms ± 50.
+
 **Lamps and a shorter monitor, 2026-09-11 (fourth pass).** The CRT's tube housing is
 84 deep instead of 108 and tapers toward the back; the tower is 114 deep instead of
 138. Four portfolio labels now sit on the wall on a broad arch around the machine -

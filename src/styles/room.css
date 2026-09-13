@@ -79,16 +79,6 @@
   background: var(--desk-band);
 }
 
-/* The only glow in the scene, thrown by the tube onto the wall behind it. */
-.room__glow {
-  inset: 0;
-  background: radial-gradient(
-    42% 38% at 38% 62%,
-    color-mix(in srgb, var(--cyan) 18%, transparent) 0%,
-    transparent 70%
-  );
-  transition: opacity 260ms var(--ease-smooth);
-}
 
 /* ----------------------------------------------------------- the machine */
 
@@ -263,13 +253,22 @@
    glass, so they keep their proportions at every framing; the burst is sized
    against the ARTWORK, because it travels out across the machine.
 
-   One 2000ms cycle with named phases, in order:
+   One 3600ms cycle with named beats, in order - a normal CLICK:
 
-     0-10%   anticipation - the hand lifts a little further, straight up
-     10-31%  the descent
-     31-50%  contact - the button is down, the burst launches
-     50-68%  the button releases and the hand rises, straight up
-     68-100% rest, the quiet pause before it repeats
+     approach   0-540ms   (0-15%)       anticipation to 7.5%, then straight down
+     contact    540ms     (15%)         the key goes down, the click sounds, the
+                                        burst launches once, the lamps light in 50ms
+     press      540-640ms (15-17.78%)   100ms with the fingertip on the depressed key
+     lift       640-790ms (17.78-21.94%) the finger rises; the key is back up by 660ms
+     fade       640-2540ms (17.78-70.56%) the lamps fade to nothing over 1900ms,
+                                        starting as the finger lifts; they refuse the
+                                        pointer from half brightness (1590ms, 44.18%)
+     dark       2540-3600ms (70.6-100%) about a second of nothing, plus the next
+                                        approach, before the next contact
+     burst      540-1598ms (15-44.4%)   one flight per click, gone with a second to spare
+
+   The lamp keyframes carry the interaction cutoff and the script reads it from
+   them (lampCutoff); the room, audio and lamp checks read the beats the same way.
 
    Nothing here costs a timer and nothing accumulates. None of it takes input:
    both layers are inert and only the button is interactive. */
@@ -346,21 +345,21 @@
 }
 
 .room:is([data-invite='on'], [data-invite='finish']) .crt__go-face {
-  animation: btn-press var(--invite-cycle, 2000ms) linear infinite;
+  animation: btn-press var(--invite-cycle, 3600ms) linear infinite;
 }
 .room[data-invite='fire'] .crt__go-face {
   animation: btn-fire 520ms steps(2, end) 1 both;
 }
 @keyframes btn-press {
-  0%, 31% {
+  0%, 15% {
     translate: 0 0;
     box-shadow: 0 var(--drop) 0 0 var(--btn-edge), 0 var(--drop) 0 var(--u) var(--outline);
   }
-  33%, 50% {
+  15.56%, 17.78% {
     translate: 0 calc(var(--u) * 2);
     box-shadow: 0 var(--u) 0 0 var(--btn-edge), 0 var(--u) 0 var(--u) var(--outline);
   }
-  56%, 100% {
+  18.33%, 100% {
     translate: 0 0;
     box-shadow: 0 var(--drop) 0 0 var(--btn-edge), 0 var(--drop) 0 var(--u) var(--outline);
   }
@@ -393,9 +392,10 @@
   left: calc(50% - var(--hand-w) * var(--tip-x));
   top: calc(65% - (var(--btn-h) / 2) - var(--hand-h) * var(--tip-y));
   width: var(--hand-w);
+  transform: translateY(calc(var(--lift) * -1)); /* at rest: raised, the cycle's own first frame */
 }
 .room:is([data-invite='on'], [data-invite='finish']) .invite__hand {
-  animation: invite-hand var(--invite-cycle, 2000ms) linear infinite;
+  animation: invite-hand var(--invite-cycle, 3600ms) linear infinite;
 }
 .room[data-invite='fire'] .invite__hand {
   animation: hand-fire 520ms linear 1 both;
@@ -407,22 +407,22 @@
     transform: translateY(calc(var(--lift) * -1));
     animation-timing-function: cubic-bezier(0.35, 0, 0.65, 1);
   }
-  10% {
+  7.5% {
     transform: translateY(calc(var(--lift) * -1.22)); /* anticipation, still vertical */
     animation-timing-function: cubic-bezier(0.5, 0, 0.85, 0.6);
   }
-  31% {
+  15% {
     transform: translateY(0); /* contact, on the key's raised top face */
     animation-timing-function: linear; /* follows the face through depression */
   }
   /* The key travels down two units under the finger (see btn-press). The finger
      goes with it - it is the thing pushing it - so the two stay in contact
      through the press instead of separating by the depth of the key. */
-  33%, 50% {
+  15.56%, 17.78% {
     transform: translateY(calc(var(--u) * 2));
     animation-timing-function: cubic-bezier(0.3, 0, 0.35, 1);
   }
-  68%, 100% { transform: translateY(calc(var(--lift) * -1)); }
+  21.94%, 100% { transform: translateY(calc(var(--lift) * -1)); }
 }
 @keyframes hand-fire {
   0%, 60% { transform: translateY(calc(var(--u) * 2)); }
@@ -544,7 +544,7 @@
 .burst__bit--10 { --dx:  25; --dy:   8; --spin:   0deg; color: var(--gold); }
 
 .room:is([data-invite='on'], [data-invite='finish']) .burst__bit {
-  animation: burst var(--invite-cycle, 2000ms) steps(12, end) infinite;
+  animation: burst var(--invite-cycle, 3600ms) steps(12, end) infinite;
 }
 .room[data-invite='fire'] .burst__bit {
   animation: burst-fire 760ms steps(12, end) 1 both;
@@ -563,7 +563,7 @@
      button is what produced a tangle over it; by the time any of them has any
      opacity they are a third of the way out and travelling apart. */
   0% { opacity: 0; transform: translate(0, 0) scale(0.3) rotate(0deg); }
-  31% {
+  15% {
     opacity: 0;
     transform: translate(0, 0) scale(0.3) rotate(0deg);
     /* Hold, then JUMP. Interpolating opacity from here to the next keyframe
@@ -573,31 +573,31 @@
        fanned out. */
     animation-timing-function: steps(1, end);
   }
-  37% {    /* leaving the button, fanned out */
+  17.56% {    /* leaving the button, fanned out - 92ms after contact */
     opacity: 1;
     transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.32),
                          calc(var(--dy) * var(--reach) * var(--fx) * 0.32))
                scale(1.15) rotate(calc(var(--spin) * 0.3));
   }
-  46% {    /* crossing the glass boundary and the bezel */
+  22.67% {    /* crossing the glass boundary and the bezel */
     opacity: 1;
     transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.5),
                          calc(var(--dy) * var(--reach) * var(--fx) * 0.52))
                scale(1) rotate(calc(var(--spin) * 0.7));
   }
-  62% {    /* out in the room */
+  31.61% {    /* out in the room */
     opacity: 1;
     transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.82),
                          calc(var(--dy) * var(--reach) * var(--fx) * 0.86))
                scale(0.95) rotate(var(--spin));
   }
-  74% {
+  38% {
     opacity: 0.7;
     transform: translate(calc(var(--dx) * var(--reach) * var(--fx) * 0.94),
                          calc(var(--dy) * var(--reach) * var(--fx) * 0.97))
                scale(0.85) rotate(var(--spin));
   }
-  86%, 100% {
+  44.4%, 100% {    /* gone with a second to spare: one burst per click */
     opacity: 0;
     transform: translate(calc(var(--dx) * var(--reach) * var(--fx)),
                          calc(var(--dy) * var(--reach) * var(--fx)))
@@ -646,24 +646,29 @@
 }
 
 /* Hover and focus strengthen the invitation. They never touch the button. */
-.room[data-hot='on'] .room__glow { opacity: 1.35; }
 
 /* ============================================================= the lamps
-   Four portfolio labels on the wall around the computer, on a broad arch
-   from the left of the desk, over the machine and down the right. They are
-   links, and they are always there - subdued but readable. Each press of the
-   demonstrated key lights them for a moment, a small patch of light around
-   each icon and heading, and they fade back. They never move.
+   Five portfolio links on the wall around the computer, on a broad arch from
+   the far lower left, over the machine and down the right. Between presses
+   they do not exist for anyone: not visible, not hoverable, not clickable,
+   not focusable, not in the accessibility tree - `visibility: hidden` does
+   all of that, and their positions stay reserved so the reveal moves nothing.
+   On each demonstrated click they light together at contact and fade to
+   nothing over the two seconds after the finger lifts, restrained to a small
+   patch of light close to each icon and its heading - the wall itself stays
+   dark; there is no halo behind the machine.
 
    THE PRESS IS THEIR CLOCK. The lamp keyframes run on the same duration as
    the hand, the key and the burst, and start on the same style change, so
-   contact at 31% is the same frame for all four effects and there is no
-   timer to drift. A real activation lights them once, from the same press.
+   contact is the same frame for all four effects and there is no timer to
+   drift. A real activation lights them once, from the same press. The manual
+   control in the corner (`data-links='open'`) shows them steadily instead,
+   which is the way in under reduced motion.
 
    Positions are relative to the artwork's displayed box, not to a viewport:
    --art-w and --art-h are its size at the current whole-number scale, and
-   the lamps sit at fractions of it around the machine, with a floor so the
-   top of the arch never leaves a short window. */
+   the lamps sit at fractions of it around the machine, with floors so they
+   never leave a short window or land on the theme switch. */
 
 @property --lit {
   syntax: '<number>';
@@ -674,8 +679,10 @@
 .room__lamps {
   --art-w: calc(var(--art-width) * var(--px-scale) * 1px);
   --art-h: calc(var(--art-height) * var(--px-scale) * 1px);
-  --lamp-font: clamp(16px, calc(var(--px-scale) * 8px), 24px); /* Silkscreen is an 8px face */
-  --lamp-icon: clamp(32px, calc(var(--px-scale) * 16px), 48px); /* 16 cells, whole pixels each */
+  /* Silkscreen is an 8px face and the icons are 16 cells: both stay crisp only
+     at whole multiples, so the desktop step above 2x (16px, 32px) is 3x. */
+  --lamp-font: 24px;
+  --lamp-icon: 48px;
 
   position: absolute;
   inset: 0;
@@ -685,16 +692,28 @@
 
 .lamp {
   --lit: 0;
+  --lamp-accent: var(--ink); /* a lamp without a colour of its own still has its patch of light */
   --lamp-light: var(--lamp-accent);
-  --lamp-glow: 34%;
+  --lamp-glow: 26%;
 
   position: absolute;
   translate: -50% -50%;
+  /* Its own content width: an absolutely positioned box with only a left edge
+     would otherwise shrink to the room left over beside it and wrap early. */
+  width: max-content;
   display: grid;
   justify-items: center;
   gap: calc(var(--lamp-font) * 0.45);
-  padding: calc(var(--lamp-font) * 0.5) calc(var(--lamp-font) * 0.75);
-  pointer-events: auto;
+  /* The padding is the hit area: a generous margin of wall around the icon
+     and heading, with nothing drawn in it. */
+  padding: calc(var(--lamp-font) * 0.75) calc(var(--lamp-font) * 1);
+  /* Gone between clicks. The keyframes and the manual control turn these
+     on; nothing else does, so a lamp is never reachable while it is dark.
+     The whole group - icon, heading and patch - fades with --lit, so at the
+     end of a fade nothing is left, not even dim lettering. */
+  visibility: hidden;
+  pointer-events: none;
+  opacity: var(--lit);
   isolation: isolate;
   font-family: var(--face-ui);
   font-size: var(--lamp-font);
@@ -703,7 +722,7 @@
   text-align: center;
   text-decoration: none;
   white-space: nowrap;
-  color: color-mix(in srgb, var(--ink) calc(var(--lit) * 100%), var(--ink-dim));
+  color: var(--ink);
 }
 .lamp:focus-visible {
   outline: var(--edge) solid var(--cyan);
@@ -713,10 +732,12 @@
    the running animation, so the cycle cannot dim it under a pointer. */
 .lamp:is(:hover, :focus-visible) { --lit: 1 !important; }
 
-/* The patch of light: an ellipse around the icon and heading, nothing more. */
+/* The patch of light: a small ellipse hugging the icon and heading, faint at
+   its edge well inside the group's own box - restrained enough that five of
+   them never merge into a wash across the wall. */
 .lamp__glow {
   position: absolute;
-  inset: -45% -30%;
+  inset: 4% 8%;
   z-index: -1;
   border-radius: 50%;
   background: radial-gradient(closest-side,
@@ -724,7 +745,7 @@
   opacity: var(--lit);
   pointer-events: none;
 }
-:root[data-theme='light'] .lamp { --lamp-light: #fffdf5; --lamp-glow: 90%; }
+:root[data-theme='light'] .lamp { --lamp-light: #fffdf5; --lamp-glow: 72%; }
 
 .lamp__icon { width: var(--lamp-icon); height: var(--lamp-icon); }
 .lamp__icon .px-sprite { width: 100%; height: 100%; }
@@ -742,50 +763,123 @@
 .lamp--about { --lamp-accent: var(--pink); }
 .lamp--projects { --lamp-accent: var(--gold); }
 .lamp--social { --lamp-accent: var(--mint); }
+.lamp--degrees { --lamp-accent: var(--violet); }
 
-/* The arch. Fractions of the artwork's displayed box, measured from its
-   centre line and its top; the machine occupies roughly the middle third. */
-.lamp--github { left: calc(50% - var(--art-w) * 0.40); top: calc(100% - var(--art-h) * 0.60); }
-.lamp--about { left: calc(50% - var(--art-w) * 0.33); top: calc(100% - var(--art-h) * 0.88); }
+/* The arch uses the WALL, not just the artwork: the crown and the two upper
+   lamps take their height from the free wall above the artwork (100% minus
+   --art-h) and their spread from the window's width, with floors and ceilings
+   in rem so the complete icon and heading stay inside any window and clear of
+   the theme switch (top right) and the sound and reveal controls (bottom
+   right). GitHub and Degrees sit lower, beside the desk, measured from the
+   artwork so they never land on the machine. A wide, short window - where the
+   artwork renders small - therefore gets a broad arch across the empty wall
+   instead of a tight ring around a small machine. */
+.lamp--github {
+  left: max(6.5rem, 7%);
+  top: calc(100% - var(--art-h) * 0.55 - (100% - var(--art-h)) * 0.10);
+}
+.lamp--about {
+  left: max(9rem, 17%);
+  top: max(7rem, calc((100% - var(--art-h)) * 0.72 + var(--art-h) * 0.06));
+}
 .lamp--projects {
   left: 50%;
-  top: max(calc(var(--lamp-font) * 3), calc(100% - var(--art-h) * 1.12 + var(--lamp-font) * 1.5));
+  top: max(6rem, calc((100% - var(--art-h)) * 0.42));
 }
-.lamp--social { left: calc(50% + var(--art-w) * 0.37); top: calc(100% - var(--art-h) * 0.72); }
+.lamp--social {
+  left: min(calc(100% - 9rem), 83%);
+  top: max(7rem, calc((100% - var(--art-h)) * 0.72 + var(--art-h) * 0.06));
+}
+.lamp--degrees {
+  left: min(calc(100% - 13.5rem), 93%);
+  top: calc(100% - var(--art-h) * 0.58 - (100% - var(--art-h)) * 0.10);
+}
+/* A short window has little wall above the machine: the crown moves left of
+   centre, over the monitor's housing rather than the tower's taller top. */
+@media (max-height: 46rem) and (min-width: 44rem) {
+  .lamp--projects { left: calc(50% - var(--art-w) * 0.06); }
+}
 
-/* Lit from the press: up in 40ms, held 200ms, back over 200ms. */
+/* The cycle (see .invite): dark until contact at 15% (540ms); lit in 50ms;
+   full for the 100ms press; then a linear fade over 1900ms to 70.56% as the
+   finger lifts and long after; hidden from 70.6%. Visibility flips on the
+   frames either side of the visible span so the fade is seen and the dark
+   phase reserves the space without a trace. The pointer is refused from half
+   brightness (44.18%, 1590ms): a lamp can be activated while it is clearly
+   visible and never while it is too faint to identify. The script reads that
+   cutoff from these keyframes (lampCutoff) to hand focus back. */
 .room:is([data-invite='on'], [data-invite='finish']) .lamp {
-  animation: lamp-cycle var(--invite-cycle, 2000ms) linear infinite;
+  animation: lamp-cycle var(--invite-cycle, 3600ms) linear infinite;
 }
 .room[data-invite='fire'] .lamp {
   animation: lamp-fire 520ms linear 1 both;
 }
 @keyframes lamp-cycle {
-  0%, 31% { --lit: 0; }
-  33%, 43% { --lit: 1; }
-  53%, 100% { --lit: 0; }
+  0%, 15% { --lit: 0; visibility: hidden; pointer-events: none; }
+  15.01% { --lit: 0; visibility: visible; pointer-events: none; }
+  16.39%, 17.78% { --lit: 1; visibility: visible; pointer-events: auto; }
+  44.17% { --lit: 0.5; visibility: visible; pointer-events: auto; }
+  44.18% { --lit: 0.5; visibility: visible; pointer-events: none; }
+  70.56% { --lit: 0; visibility: visible; pointer-events: none; }
+  70.6%, 100% { --lit: 0; visibility: hidden; pointer-events: none; }
 }
+/* A real press: lit at once, and still fading as the camera moves in. */
 @keyframes lamp-fire {
-  0% { --lit: 0; }
-  8%, 46% { --lit: 1; }
-  85%, 100% { --lit: 0; }
+  0% { --lit: 0; visibility: visible; pointer-events: none; }
+  10%, 60% { --lit: 1; visibility: visible; pointer-events: none; }
+  100% { --lit: 0; visibility: visible; pointer-events: none; }
 }
 
-.room[data-state='entering-desktop'] .lamp { pointer-events: none; }
+/* The manual control: a steady, fully lit menu until it is closed. Important,
+   so the running demonstration cannot dim or hide it underneath. While the
+   menu is open the demonstration itself rests: the glove raised, the key up,
+   no burst - the script drops its cue observer and re-binds when the menu
+   closes. A real press (`fire`) is never held back. */
+.room[data-links='open'] .lamp {
+  animation: none !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  --lit: 1 !important;
+}
+.room[data-links='open']:not([data-invite='fire']) :is(.invite__hand, .crt__go-face, .burst__bit) {
+  animation: none !important;
+}
+
+.room[data-state='entering-desktop'] .lamp { pointer-events: none !important; }
 
 /* On a phone the machine fills the width, so the arch folds into the wall
-   above it: the top of the arch, then a row either side, then GitHub at the
-   lower left just above the monitor's top - the same order, read the same
-   way round. The floors keep the rows clear of the theme switch and of each
-   other on short screens. */
+   above it in three rows, read the same way round: the crown; About Me and
+   Other Social Medias either side; GitHub at the lower left and Degrees at
+   the lower right, just above the monitor's top. Long headings wrap. The
+   floors keep the rows clear of the theme switch and of each other. */
 @media (max-width: 34rem), (max-height: 26rem) and (max-width: 44rem),
        (orientation: portrait) and (max-width: 48rem) {
-  .lamp { padding: 0.5rem 0.6rem; }
-  .lamp--projects { left: 50%; top: max(5.5rem, calc(100% - var(--art-h) * 1.42)); }
-  .lamp--about { left: calc(50% - var(--art-w) * 0.27); top: max(10rem, calc(100% - var(--art-h) * 1.2)); }
-  .lamp--social { left: calc(50% + var(--art-w) * 0.26); top: max(10rem, calc(100% - var(--art-h) * 1.2)); }
-  .lamp--github { left: calc(50% - var(--art-w) * 0.32); top: max(14rem, calc(100% - var(--art-h) * 1.01)); }
-  .lamp--social .lamp__text { white-space: normal; max-width: 7em; text-wrap: balance; }
+  .room__lamps { --lamp-font: 16px; --lamp-icon: 32px; }
+  .lamp { padding: 0.5rem 0.6rem; gap: calc(var(--lamp-font) * 0.3); }
+  .lamp--projects { left: 50%; top: max(3.3rem, calc(100% - var(--art-h) * 1.57)); }
+  .lamp--about { left: calc(50% - var(--art-w) * 0.27); top: max(9.9rem, calc(100% - var(--art-h) * 1.361)); }
+  .lamp--social { left: calc(50% + var(--art-w) * 0.27); top: max(9.9rem, calc(100% - var(--art-h) * 1.361)); }
+  .lamp--github { left: calc(50% - var(--art-w) * 0.31); top: max(17rem, calc(100% - var(--art-h) * 1.135)); }
+  .lamp--degrees { left: calc(50% + var(--art-w) * 0.25); top: max(17rem, calc(100% - var(--art-h) * 1.135)); }
+  .lamp--social .lamp__text { white-space: normal; max-width: 9.5em; }
+  .lamp--degrees .lamp__text { white-space: normal; max-width: 8.5em; text-wrap: balance; }
+  .lamp--degrees .lamp__line { display: inline; }
+}
+
+/* A phone held sideways shows the artwork at 1x with a 134px margin of wall
+   either side and almost none above, so the arch becomes two columns: the
+   crown, About Me and GitHub down the left; Other Social Medias and Degrees
+   down the right. Headings wrap to fit the column. */
+@media (max-height: 26rem) and (min-width: 44rem) {
+  .room__lamps { --lamp-font: 16px; --lamp-icon: 32px; }
+  .lamp { padding: 0.35rem 0.4rem; }
+  .lamp .lamp__text { white-space: normal; max-width: 6.5em; text-wrap: balance; }
+  .lamp .lamp__line { display: inline; }
+  .lamp--projects { left: calc(50% - var(--art-w) * 0.5 - 4.2rem); top: 4.6rem; }
+  .lamp--about { left: calc(50% - var(--art-w) * 0.5 - 4.2rem); top: 12.2rem; }
+  .lamp--github { left: calc(50% - var(--art-w) * 0.5 - 4.2rem); top: 18.4rem; }
+  .lamp--social { left: calc(50% + var(--art-w) * 0.5 + 4.2rem); top: 6.4rem; }
+  .lamp--degrees { left: calc(50% + var(--art-w) * 0.5 + 4.2rem); top: 14.4rem; }
 }
 
 /* ============================================================ the states */
@@ -862,13 +956,6 @@
 
 @media (max-width: 34rem), (max-height: 26rem) and (max-width: 44rem),
        (orientation: portrait) and (max-width: 48rem) {
-  .room__glow {
-    background: radial-gradient(
-      52% 34% at 40% 52%,
-      color-mix(in srgb, var(--cyan) 18%, transparent) 0%,
-      transparent 70%
-    );
-  }
   /* The compact glass is 192px wide, so the button takes a larger share of it:
      the label has to stay readable and the target thumb-sized without shrinking
      the monitor itself. */

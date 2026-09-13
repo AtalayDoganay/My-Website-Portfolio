@@ -98,8 +98,16 @@ export const opening = {
     { id: 'github', label: 'GitHub', href: 'https://github.com/AtalayDoganay' },
     { id: 'about', label: 'About Me', href: '/about/' },
     { id: 'projects', label: 'Projects I Have Done So Far', lines: ['Projects I Have', 'Done So Far'], href: '/projects/' },
-    { id: 'social', label: 'Other Social Medias', href: '/contact/' },
+    { id: 'social', label: 'Other Social Medias', lines: ['Other Social', 'Medias'], href: '/contact/' },
+    // The About page's credentials section: confirmed degrees only, and an
+    // honest note that no certificates are listed yet.
+    { id: 'degrees', label: 'Degrees, Certificates & Skills', lines: ['Degrees, Certificates', '& Skills'], href: '/about/#degrees-certificates-skills' },
   ],
+  // The manual reveal control beside the sound control. Between presses the
+  // labels are gone entirely; this shows them steadily until closed, and is
+  // the way in under reduced motion, where nothing is demonstrated.
+  revealLabel: 'Show links',
+  concealLabel: 'Hide links',
 };
 
 export const about = {
@@ -114,6 +122,16 @@ export const about = {
   education: [
     { school: 'Cal Poly Pomona', detail: 'Computer Science, currently studying' },
     { school: 'Orange Coast College', detail: 'Associate in Science, Computer Science' },
+  ],
+  // The section the home page's "Degrees, Certificates & Skills" lamp points at.
+  // It carries the confirmed degrees above and nothing invented: no certificate
+  // is confirmed, so none is listed, and skills are shown through the projects
+  // rather than claimed as a list.
+  credentialsHeading: 'Degrees, certificates and skills',
+  credentialsId: 'degrees-certificates-skills',
+  credentialsNotes: [
+    'No certificates are listed yet.',
+    'Skills are shown through the projects: each one says what it was built with.',
   ],
 };
 

@@ -21,5 +21,6 @@ ${desktop({
       heading: opening.desktopHeading,
       note: opening.desktopNote,
       items: opening.desktopItems,
+      links: opening.lamps,
     })}`,
   });
